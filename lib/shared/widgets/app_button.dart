@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/components/buttons/primary_button.dart';
+import 'package:futsmandu_design_system/components/buttons/secondary_button.dart';
 
 import '../../core/design_system/app_spacing.dart';
 
@@ -24,42 +26,53 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttonChild = isLoading
-        ? const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-        : icon == null
-        ? Text(label)
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon),
-              const SizedBox(width: AppSpacing.xs),
-              Text(label),
-            ],
-          );
+    if (variant == AppButtonVariant.text) {
+      final textChild = isLoading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : icon == null
+          ? Text(label)
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon),
+                const SizedBox(width: AppSpacing.xs),
+                Text(label),
+              ],
+            );
 
-    final button = switch (variant) {
-      AppButtonVariant.filled => FilledButton(
-        onPressed: isLoading ? null : onPressed,
-        child: buttonChild,
-      ),
-      AppButtonVariant.outlined => OutlinedButton(
-        onPressed: isLoading ? null : onPressed,
-        child: buttonChild,
-      ),
-      AppButtonVariant.text => TextButton(
-        onPressed: isLoading ? null : onPressed,
-        child: buttonChild,
-      ),
-    };
-
-    final content = SizedBox(height: AppSpacing.buttonHeight, child: button);
-    if (expand) {
-      return SizedBox(width: double.infinity, child: content);
+      final textButton = SizedBox(
+        height: AppSpacing.buttonHeight,
+        child: TextButton(
+          onPressed: isLoading ? null : onPressed,
+          child: textChild,
+        ),
+      );
+      if (expand) {
+        return SizedBox(width: double.infinity, child: textButton);
+      }
+      return IntrinsicWidth(child: textButton);
     }
-    return IntrinsicWidth(child: content);
+
+    final iconWidget = icon == null ? null : Icon(icon, size: 18);
+    if (variant == AppButtonVariant.outlined) {
+      return SecondaryButton(
+        label: label,
+        onPressed: onPressed,
+        icon: iconWidget,
+        fullWidth: expand,
+      );
+    }
+
+    return PrimaryButton(
+      label: label,
+      onPressed: onPressed,
+      icon: iconWidget,
+      isLoading: isLoading,
+      fullWidth: expand,
+    );
   }
 }
