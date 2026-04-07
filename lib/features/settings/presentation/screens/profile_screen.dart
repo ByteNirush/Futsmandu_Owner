@@ -1,125 +1,466 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
-import '../../../../shared/widgets/app_button.dart';
+import '../../../../core/theme/theme_provider.dart';
 import '../../../../shared/widgets/app_card.dart';
-import '../../../../shared/widgets/screen_state_view.dart';
-import 'venue_settings_screen.dart';
+import '../../../staff/presentation/screens/add_staff_screen.dart';
+import '../../../auth/presentation/screens/upload_documents_screen.dart';
+import '../controllers/owner_profile_controller.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({
-    super.key,
-    this.state = ScreenUiState.content,
-  });
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key, required this.themeProvider});
 
-  final ScreenUiState state;
+  final ThemeProvider themeProvider;
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  late final OwnerProfileController _controller = OwnerProfileController();
+
+  static const _ownerName = 'Owner Test';
+  static const _ownerEmail = 'owner@futsmandu.com';
+  static const _ownerPhone = '+977 98XXXXXXXX';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  static String _themeModeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return 'System';
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              // Edit profile
-            },
-          ),
-        ],
-      ),
-      body: ScreenStateView(
-        state: state,
-        emptyTitle: 'No profile details',
-        emptySubtitle: 'Profile details will appear here.',
-        content: ListView(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          children: [
-            // Profile Header
-            AppCard(
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 32,
-                    backgroundColor: colorScheme.primaryContainer,
-                    child: Text(
-                      'OT',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w700,
+    return AnimatedBuilder(
+      animation: Listenable.merge([widget.themeProvider, _controller]),
+      builder: (context, _) {
+        final themeMode = widget.themeProvider.themeMode;
+        return Scaffold(
+          appBar: AppBar(title: const Text('Owner Profile')),
+          body: SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPadding,
+                AppSpacing.sm,
+                AppSpacing.screenPadding,
+                AppSpacing.lg,
+              ),
+              children: [
+                _ProfileHeaderCard(
+                  name: _ownerName,
+                  email: _ownerEmail,
+                  phone: _ownerPhone,
+                  isVerified: _controller.isVerified,
+                  colorScheme: colorScheme,
+                  kycStatusLabel: _controller.kycStatusLabel,
+                  onUpdateKyc: () => _openKycUpdate(context),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SectionHeader(
+                  title: 'Quick Actions',
+                  subtitle: 'Manage staff and analysts in fewer taps.',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 380;
+                    return GridView.count(
+                      crossAxisCount: compact ? 1 : 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: AppSpacing.sm,
+                      crossAxisSpacing: AppSpacing.sm,
+                      childAspectRatio: compact ? 3.6 : 1.55,
+                      children: [
+                        _QuickActionCard(
+                          icon: Icons.person_add_alt_1_rounded,
+                          title: 'Add Staff',
+                          subtitle: 'Invite a new staff member',
+                          accentColor: colorScheme.primary,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const AddStaffScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _QuickActionCard(
+                          icon: Icons.analytics_outlined,
+                          title: 'Add Analyst',
+                          subtitle: 'Create an analytics access role',
+                          accentColor: colorScheme.tertiary,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => AddStaffScreen(
+                                  title: 'Add Analyst',
+                                  description:
+                                      'Fill in the details to add a new analyst member.',
+                                  nameLabel: 'Analyst name',
+                                  nameHint: 'Enter analyst full name',
+                                  phoneLabel: 'Phone number',
+                                  phoneHint: 'Enter phone number',
+                                  roleSectionTitle: 'Access level',
+                                  roleSectionDescription:
+                                      'Choose the analyst access profile.',
+                                  primaryActionLabel: 'Save Analyst',
+                                  successMessage: 'Analyst added successfully',
+                                  roles: const ['Owner Analyst', 'Owner Admin'],
+                                  initialRole: 'Owner Analyst',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SectionHeader(
+                  title: 'Preferences',
+                  subtitle: 'Tune how the owner workspace behaves.',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                AppCard(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
+                      _PreferenceTile(
+                        icon: Icons.notifications_outlined,
+                        title: 'Notifications',
+                        subtitle: 'Booking alerts and account updates',
+                        trailing: Switch.adaptive(
+                          value: _controller.notificationsEnabled,
+                          onChanged: _controller.setNotificationsEnabled,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      _PreferenceTile(
+                        icon: Icons.brightness_6_outlined,
+                        title: 'Theme',
+                        subtitle: _themeModeLabel(themeMode),
+                        trailing: ToggleButtons(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          constraints: const BoxConstraints(
+                            minHeight: 36,
+                            minWidth: 44,
+                          ),
+                          isSelected: [
+                            themeMode == ThemeMode.light,
+                            themeMode == ThemeMode.dark,
+                          ],
+                          onPressed: (index) {
+                            widget.themeProvider.setThemeMode(
+                              index == 0 ? ThemeMode.light : ThemeMode.dark,
+                            );
+                          },
+                          children: const [
+                            Icon(Icons.light_mode_outlined, size: 18),
+                            Icon(Icons.dark_mode_outlined, size: 18),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      _PreferenceTile(
+                        icon: Icons.help_outline_rounded,
+                        title: 'Help & Support',
+                        subtitle: 'See FAQs or contact the support team',
+                        trailing: Icon(
+                          Icons.chevron_right_rounded,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        onTap: () => _showSupportSheet(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _SectionHeader(
+                  title: 'Account',
+                  subtitle: 'Manage access to this owner workspace.',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => _showLogoutDialog(context),
+                    icon: const Icon(Icons.logout_rounded),
+                    label: const Text('Logout'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.errorContainer,
+                      foregroundColor: colorScheme.onErrorContainer,
+                      minimumSize: const Size.fromHeight(
+                        AppSpacing.buttonHeight,
                       ),
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Owner Test',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openKycUpdate(BuildContext context) {
+    Navigator.of(context)
+        .push<bool>(
+          MaterialPageRoute(
+            builder: (_) => UploadDocumentsScreen(
+              onSubmitted: () => Navigator.of(context).pop(true),
+            ),
+          ),
+        )
+        .then((submitted) {
+          if (!mounted || submitted != true) return;
+          _controller.markKycUpdated();
+        });
+  }
+
+  void _showSupportSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final colorScheme = Theme.of(sheetContext).colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.email_outlined,
+                    color: colorScheme.primary,
+                  ),
+                  title: const Text('Email support'),
+                  subtitle: const Text('support@futsmandu.com'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Support email copied')),
+                    );
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.phone_outlined,
+                    color: colorScheme.primary,
+                  ),
+                  title: const Text('Call support'),
+                  subtitle: const Text('+977 98XXXXXXXX'),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Support call requested')),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final colorScheme = Theme.of(dialogContext).colorScheme;
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text(
+            'Are you sure you want to logout from the owner account?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                  (_) => false,
+                );
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: colorScheme.error,
+                foregroundColor: colorScheme.onError,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ProfileHeaderCard extends StatelessWidget {
+  const _ProfileHeaderCard({
+    required this.name,
+    required this.email,
+    required this.phone,
+    required this.isVerified,
+    required this.kycStatusLabel,
+    required this.onUpdateKyc,
+    required this.colorScheme,
+  });
+
+  final String name;
+  final String email;
+  final String phone;
+  final bool isVerified;
+  final String kycStatusLabel;
+  final VoidCallback onUpdateKyc;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.primaryContainer,
+              colorScheme.secondaryContainer,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: colorScheme.surface,
+                  child: Text(
+                    _initials(name),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: colorScheme.onPrimaryContainer,
+                                  ),
+                            ),
+                          ),
+                          if (isVerified) ...[
+                            const SizedBox(width: AppSpacing.xs),
+                            Icon(
+                              Icons.verified_rounded,
+                              size: 20,
+                              color: colorScheme.primary,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        email,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onPrimaryContainer.withValues(
+                            alpha: 0.82,
                           ),
                         ),
-                        Text(
-                          'owner@futsmandu.com',
-                          style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        phone,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onPrimaryContainer.withValues(
+                            alpha: 0.72,
+                          ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.md),
-
-            // Contact Information
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Contact Information',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  _buildInfoRow(
-                    context: context,
-                    icon: Icons.email_outlined,
-                    label: 'Email',
-                    value: 'owner@futsmandu.com',
-                  ),
-                  const Divider(height: AppSpacing.lg),
-                  _buildInfoRow(
-                    context: context,
-                    icon: Icons.phone_outlined,
-                    label: 'Phone',
-                    value: '+977 98XXXXXXXX',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Actions
-            AppButton(
-              label: 'Update Venue Settings',
-              icon: Icons.settings_outlined,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const VenueSettingsScreen()),
-              ),
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _StatusChip(
+                  label: isVerified ? 'Verified' : 'Not Verified',
+                  icon: Icons.verified_rounded,
+                  foreground: colorScheme.onPrimaryContainer,
+                  background: colorScheme.surface.withValues(alpha: 0.38),
+                ),
+                _StatusChip(
+                  label: kycStatusLabel,
+                  icon: Icons.assignment_turned_in_outlined,
+                  foreground: colorScheme.onPrimaryContainer,
+                  background: colorScheme.surface.withValues(alpha: 0.38),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            OutlinedButton.icon(
-              onPressed: () => _showLogoutDialog(context),
-              icon: const Icon(Icons.logout, size: 18),
-              label: const Text('Logout'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: colorScheme.error,
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: onUpdateKyc,
+                icon: const Icon(Icons.verified_user_outlined),
+                label: const Text('Update KYC'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.onPrimaryContainer,
+                  side: BorderSide(color: colorScheme.onPrimaryContainer),
+                ),
               ),
             ),
           ],
@@ -128,51 +469,221 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
+  static String _initials(String value) {
+    final parts = value.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty) {
+      return '--';
+    }
+    if (parts.length == 1) {
+      return parts.first.characters.take(2).toString().toUpperCase();
+    }
+    final first = parts.first.characters.take(1).toString();
+    final last = parts.last.characters.take(1).toString();
+    return '$first$last'.toUpperCase();
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(value, style: Theme.of(context).textTheme.bodyMedium),
-            ],
+        Text(
+          title,
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          subtitle,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
       ],
     );
   }
+}
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return AppCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(icon, color: accentColor),
           ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-            },
-            child: const Text('Logout'),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreferenceTile extends StatelessWidget {
+  const _PreferenceTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.trailing,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          trailing,
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return InkWell(onTap: onTap, child: content);
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.label,
+    required this.icon,
+    required this.foreground,
+    required this.background,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color foreground;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: foreground),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
