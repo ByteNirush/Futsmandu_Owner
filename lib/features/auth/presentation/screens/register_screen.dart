@@ -80,11 +80,11 @@ class RegisterScreen extends StatelessWidget {
                     // ── Primary CTA ─────────────────────────────────────────
                     const SizedBox(height: AppSpacing.md),
                     AppButton(
-                      label: 'Continue to document upload',
+                      label: 'Continue to OTP verification',
                       onPressed: () => Navigator.pushNamed(
                         context,
                         '/otp-verification',
-                        arguments: {'nextRoute': '/upload-documents'},
+                        arguments: {'nextRoute': '/shell'},
                       ),
                     ),
 
