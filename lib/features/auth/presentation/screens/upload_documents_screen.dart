@@ -7,9 +7,14 @@ import '../../../../shared/widgets/screen_state_view.dart';
 import '../widgets/auth_header.dart';
 
 class UploadDocumentsScreen extends StatelessWidget {
-  const UploadDocumentsScreen({super.key, this.state = ScreenUiState.content});
+  const UploadDocumentsScreen({
+    super.key,
+    this.state = ScreenUiState.content,
+    this.onSubmitted,
+  });
 
   final ScreenUiState state;
+  final VoidCallback? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +61,17 @@ class UploadDocumentsScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             AppButton(
               label: 'Submit for review',
-              onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/shell', (_) => false),
+              onPressed: () {
+                if (onSubmitted != null) {
+                  onSubmitted!();
+                  return;
+                }
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/shell',
+                  (_) => false,
+                );
+              },
             ),
           ],
         ),
