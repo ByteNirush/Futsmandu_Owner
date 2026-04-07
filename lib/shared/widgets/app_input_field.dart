@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 
 class AppInputField extends StatefulWidget {
   const AppInputField({
@@ -37,7 +38,7 @@ class _AppInputFieldState extends State<AppInputField> {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
+    return AppTextField(
       controller: widget.controller,
       keyboardType: widget.keyboardType,
       textInputAction: widget.textInputAction,
@@ -45,23 +46,19 @@ class _AppInputFieldState extends State<AppInputField> {
       validator: widget.validator,
       obscureText: widget.isPassword && _obscureText,
       maxLines: widget.isPassword ? 1 : widget.maxLines,
-      style: Theme.of(context).textTheme.bodyMedium,
-      decoration: InputDecoration(
-        labelText: widget.label,
-        hintText: widget.hint,
-        prefixIcon: widget.prefixIcon == null ? null : Icon(widget.prefixIcon),
-        suffixIcon: widget.isPassword
-            ? IconButton(
-                onPressed: () => setState(() => _obscureText = !_obscureText),
-                icon: Icon(
-                  _obscureText
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                ),
-              )
-            : null,
-        errorText: widget.errorText,
-      ),
+      labelText: widget.label,
+      hintText: widget.hint,
+      prefixIcon: widget.prefixIcon == null ? null : Icon(widget.prefixIcon),
+      suffixIcon: widget.isPassword
+          ? IconButton(
+              onPressed: () => setState(() => _obscureText = !_obscureText),
+              icon: Icon(
+                _obscureText
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
+            )
+          : null,
     );
   }
 }
