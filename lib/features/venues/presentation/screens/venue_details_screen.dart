@@ -92,7 +92,7 @@ class VenueDetailsScreen extends StatelessWidget {
                 size: 16,
                 color: colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: AppSpacing.xxs),
               Text(
                 'Baneshwor, Kathmandu',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
