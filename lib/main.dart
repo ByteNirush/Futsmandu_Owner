@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'core/theme/app_theme.dart';
-import 'core/design_system/app_spacing.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/analytics/presentation/screens/analytics_overview_screen.dart';
 import 'features/auth/presentation/screens/forgot_password_screen.dart';
@@ -15,9 +14,7 @@ import 'features/bookings/presentation/screens/bookings_list_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/pricing/presentation/screens/pricing_rules_screen.dart';
 import 'features/settings/presentation/screens/profile_screen.dart';
-import 'features/staff/presentation/screens/staff_list_screen.dart';
 import 'features/venues/presentation/screens/venues_list_screen.dart';
-import 'shared/widgets/app_card.dart';
 
 void main() {
   runApp(const FutsmanduApp());
@@ -165,146 +162,8 @@ class MoreTabScreen extends StatelessWidget {
 
   final ThemeProvider themeProvider;
 
-  static String _themeModeLabel(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.system:
-        return 'System';
-      case ThemeMode.light:
-        return 'Light';
-      case ThemeMode.dark:
-        return 'Dark';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final items = [
-      (
-        title: 'Staff',
-        icon: Icons.groups_rounded,
-        screen: const StaffListScreen(),
-      ),
-      (
-        title: 'Analytics',
-        icon: Icons.insert_chart_outlined_rounded,
-        screen: const AnalyticsOverviewScreen(),
-      ),
-      (
-        title: 'Settings',
-        icon: Icons.settings_outlined,
-        screen: const ProfileScreen(),
-      ),
-    ];
-
-    return SafeArea(
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.screenPadding,
-          AppSpacing.md,
-          AppSpacing.screenPadding,
-          AppSpacing.lg,
-        ),
-        itemCount: items.length + 1,
-        separatorBuilder: (_, index) => const SizedBox(height: AppSpacing.sm),
-        itemBuilder: (context, index) {
-          if (index == 0) {
-            return AppCard(
-              // Give the segmented control more horizontal room on small screens.
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xxs,
-                AppSpacing.md,
-                AppSpacing.xxs,
-                AppSpacing.md,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Appearance',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'Current: ${_themeModeLabel(themeProvider.themeMode)}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    child: SegmentedButton<ThemeMode>(
-                      segments: const [
-                        ButtonSegment<ThemeMode>(
-                          value: ThemeMode.system,
-                          label: Text(
-                            'System',
-                            maxLines: 1,
-                            softWrap: false,
-                          ),
-                          icon: Icon(Icons.settings_suggest_outlined, size: 16),
-                        ),
-                        ButtonSegment<ThemeMode>(
-                          value: ThemeMode.light,
-                          label: Text(
-                            'Light',
-                            maxLines: 1,
-                            softWrap: false,
-                          ),
-                          icon: Icon(Icons.light_mode_outlined, size: 16),
-                        ),
-                        ButtonSegment<ThemeMode>(
-                          value: ThemeMode.dark,
-                          label: Text(
-                            'Dark',
-                            maxLines: 1,
-                            softWrap: false,
-                          ),
-                          icon: Icon(Icons.dark_mode_outlined, size: 16),
-                        ),
-                      ],
-                      selected: {themeProvider.themeMode},
-                      style: ButtonStyle(
-                        side: WidgetStatePropertyAll(
-                          BorderSide(color: colorScheme.outline),
-                        ),
-                        // Reduce internal spacing so all labels fit on one line.
-                        padding: WidgetStatePropertyAll(
-                          const EdgeInsets.symmetric(horizontal: 4),
-                        ),
-                      ),
-                      onSelectionChanged: (selection) {
-                        themeProvider.setThemeMode(selection.first);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final item = items[index - 1];
-          return AppCard(
-            onTap: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => item.screen));
-            },
-            child: Row(
-              children: [
-                Icon(item.icon),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    item.title,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded),
-              ],
-            ),
-          );
-        },
-      ),
-    );
+    return ProfileScreen(themeProvider: themeProvider);
   }
 }
