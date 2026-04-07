@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../auth/data/owner_auth_api.dart';
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/theme/theme_provider.dart';
@@ -19,6 +20,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final OwnerProfileController _controller = OwnerProfileController();
+  final OwnerAuthApi _authApi = OwnerAuthApi();
 
   static const _ownerName = 'Owner Test';
   static const _ownerEmail = 'owner@futsmandu.com';
@@ -305,8 +307,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
+                try {
+                  await _authApi.logout();
+                } catch (_) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Logout request failed, local session cleared.',
+                      ),
+                    ),
+                  );
+                }
+                if (!context.mounted) {
+                  return;
+                }
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   '/login',
