@@ -11,6 +11,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  futsmandu_design_system:
+    path: ../futsmandu_design_system
 
   cupertino_icons: ^1.0.8
   google_fonts: ^6.3.0
@@ -22,6 +24,9 @@ dependencies:
   pinput: ^6.0.2
   flutter_local_notifications: ^21.0.0
   flutter_secure_storage: ^10.0.0
+  dio: ^5.9.0
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.3.0
 
 dev_dependencies:
   flutter_test:
