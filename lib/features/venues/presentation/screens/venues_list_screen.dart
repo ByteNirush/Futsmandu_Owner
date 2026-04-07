@@ -90,7 +90,7 @@ class VenuesListScreen extends StatelessWidget {
                                 // Increase contrast in dark mode.
                                 color: colorScheme.onSurface,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.xxs),
                               Expanded(
                                 child: Text(
                                   venue['address']!,
