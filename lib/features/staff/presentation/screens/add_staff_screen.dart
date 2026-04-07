@@ -10,9 +10,33 @@ class AddStaffScreen extends StatefulWidget {
   const AddStaffScreen({
     super.key,
     this.state = ScreenUiState.content,
+    this.title = 'Add Staff',
+    this.description = 'Fill in the details to add a new staff member.',
+    this.nameLabel = 'Staff name',
+    this.nameHint = 'Enter full name',
+    this.phoneLabel = 'Phone number',
+    this.phoneHint = 'Enter phone number',
+    this.roleSectionTitle = 'Role',
+    this.roleSectionDescription = 'Select the staff role and permissions',
+    this.primaryActionLabel = 'Save Staff',
+    this.successMessage = 'Staff added successfully',
+    this.roles = const ['Owner Staff', 'Owner Admin'],
+    this.initialRole,
   });
 
   final ScreenUiState state;
+  final String title;
+  final String description;
+  final String nameLabel;
+  final String nameHint;
+  final String phoneLabel;
+  final String phoneHint;
+  final String roleSectionTitle;
+  final String roleSectionDescription;
+  final String primaryActionLabel;
+  final String successMessage;
+  final List<String> roles;
+  final String? initialRole;
 
   @override
   State<AddStaffScreen> createState() => _AddStaffScreenState();
@@ -22,8 +46,16 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  static const _roles = ['Owner Staff', 'Owner Admin'];
-  String _selectedRole = _roles[0];
+  late String _selectedRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRole =
+        widget.initialRole != null && widget.roles.contains(widget.initialRole)
+        ? widget.initialRole!
+        : widget.roles.first;
+  }
 
   @override
   void dispose() {
@@ -36,20 +68,20 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     if (_formKey.currentState!.validate()) {
       // Save staff logic here
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Staff added successfully')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(widget.successMessage)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Staff')),
+      appBar: AppBar(title: Text(widget.title)),
       body: ScreenStateView(
         state: widget.state,
-        emptyTitle: 'No staff form',
-        emptySubtitle: 'Fill in the details to add a new staff member.',
+        emptyTitle: 'No ${widget.title.toLowerCase()} form',
+        emptySubtitle: widget.description,
         content: ListView(
           padding: const EdgeInsets.all(AppSpacing.sm),
           children: [
@@ -59,16 +91,16 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 child: Column(
                   children: [
                     AppInputField(
-                      label: 'Staff name',
-                      hint: 'Enter full name',
+                      label: widget.nameLabel,
+                      hint: widget.nameHint,
                       prefixIcon: Icons.person_outline,
                       controller: _nameController,
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     AppInputField(
-                      label: 'Phone number',
-                      hint: 'Enter phone number',
+                      label: widget.phoneLabel,
+                      hint: widget.phoneHint,
                       prefixIcon: Icons.phone_outlined,
                       controller: _phoneController,
                       keyboardType: TextInputType.phone,
@@ -84,7 +116,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
             ),
             const SizedBox(height: AppSpacing.md),
             AppButton(
-              label: 'Save Staff',
+              label: widget.primaryActionLabel,
               icon: Icons.person_add,
               onPressed: _saveStaff,
             ),
@@ -99,30 +131,39 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Role',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          widget.roleSectionTitle,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          'Select the staff role and permissions',
+          widget.roleSectionDescription,
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: AppSpacing.sm),
         SegmentedButton<String>(
-          segments: const [
-            ButtonSegment(
-              value: 'Owner Staff',
-              label: Text('Staff'),
-              icon: Icon(Icons.person_outline),
-            ),
-            ButtonSegment(
-              value: 'Owner Admin',
-              label: Text('Admin'),
-              icon: Icon(Icons.admin_panel_settings_outlined),
-            ),
-          ],
+          segments: widget.roles.map((role) {
+            final isAdmin = role.toLowerCase().contains('admin');
+            final isAnalyst = role.toLowerCase().contains('analyst');
+            final label = isAnalyst
+                ? 'Analyst'
+                : isAdmin
+                ? 'Admin'
+                : 'Staff';
+
+            return ButtonSegment<String>(
+              value: role,
+              label: Text(label),
+              icon: Icon(
+                isAnalyst
+                    ? Icons.analytics_outlined
+                    : isAdmin
+                    ? Icons.admin_panel_settings_outlined
+                    : Icons.person_outline,
+              ),
+            );
+          }).toList(),
           selected: {_selectedRole},
           onSelectionChanged: (selection) {
             setState(() => _selectedRole = selection.first);
