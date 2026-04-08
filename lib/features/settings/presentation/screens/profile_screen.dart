@@ -1,36 +1,30 @@
 import 'package:flutter/material.dart';
 
-import '../../../auth/data/owner_auth_api.dart';
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../staff/presentation/screens/add_staff_screen.dart';
 import '../../../auth/presentation/screens/upload_documents_screen.dart';
-import '../controllers/owner_profile_controller.dart';
+import '../../../auth/presentation/controllers/owner_auth_controller.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, required this.themeProvider});
+  const ProfileScreen({
+    super.key,
+    required this.themeProvider,
+    required this.authController,
+  });
 
   final ThemeProvider themeProvider;
+  final OwnerAuthController authController;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final OwnerProfileController _controller = OwnerProfileController();
-  final OwnerAuthApi _authApi = OwnerAuthApi();
-
-  static const _ownerName = 'Owner Test';
-  static const _ownerEmail = 'owner@futsmandu.com';
-  static const _ownerPhone = '+977 98XXXXXXXX';
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  bool _notificationsEnabled = true;
+  bool _kycUpdated = false;
 
   static String _themeModeLabel(ThemeMode mode) {
     switch (mode) {
@@ -48,9 +42,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return AnimatedBuilder(
-      animation: Listenable.merge([widget.themeProvider, _controller]),
+      animation: Listenable.merge([
+        widget.themeProvider,
+        widget.authController,
+      ]),
       builder: (context, _) {
         final themeMode = widget.themeProvider.themeMode;
+        final owner = widget.authController.owner;
         return Scaffold(
           appBar: AppBar(title: const Text('Owner Profile')),
           body: SafeArea(
@@ -62,15 +60,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 AppSpacing.lg,
               ),
               children: [
-                _ProfileHeaderCard(
-                  name: _ownerName,
-                  email: _ownerEmail,
-                  phone: _ownerPhone,
-                  isVerified: _controller.isVerified,
-                  colorScheme: colorScheme,
-                  kycStatusLabel: _controller.kycStatusLabel,
-                  onUpdateKyc: () => _openKycUpdate(context),
-                ),
+                if (owner != null)
+                  _ProfileHeaderCard(
+                    name: owner.displayBusinessName,
+                    email: owner.email,
+                    phone: owner.phone,
+                    isVerified: owner.isVerified,
+                    colorScheme: colorScheme,
+                    kycStatusLabel: owner.isVerified
+                        ? (_kycUpdated ? 'KYC Updated' : 'Verified')
+                        : 'Pending verification',
+                    onUpdateKyc: () => _openKycUpdate(context),
+                  ),
                 const SizedBox(height: AppSpacing.md),
                 _SectionHeader(
                   title: 'Quick Actions',
@@ -109,20 +110,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => AddStaffScreen(
+                                builder: (_) => const AddStaffScreen(
                                   title: 'Add Analyst',
-                                  description:
-                                      'Fill in the details to add a new analyst member.',
                                   nameLabel: 'Analyst name',
                                   nameHint: 'Enter analyst full name',
                                   phoneLabel: 'Phone number',
                                   phoneHint: 'Enter phone number',
-                                  roleSectionTitle: 'Access level',
-                                  roleSectionDescription:
-                                      'Choose the analyst access profile.',
+                                  roleLabel: 'Access level',
                                   primaryActionLabel: 'Save Analyst',
-                                  successMessage: 'Analyst added successfully',
-                                  roles: const ['Owner Analyst', 'Owner Admin'],
+                                  submittingLabel: 'Saving...',
+                                  roles: ['Owner Analyst', 'Owner Admin'],
                                   initialRole: 'Owner Analyst',
                                 ),
                               ),
@@ -148,8 +145,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Notifications',
                         subtitle: 'Booking alerts and account updates',
                         trailing: Switch.adaptive(
-                          value: _controller.notificationsEnabled,
-                          onChanged: _controller.setNotificationsEnabled,
+                          value: _notificationsEnabled,
+                          onChanged: (value) {
+                            setState(() => _notificationsEnabled = value);
+                          },
                         ),
                       ),
                       const Divider(height: 1),
@@ -232,7 +231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         )
         .then((submitted) {
           if (!mounted || submitted != true) return;
-          _controller.markKycUpdated();
+          setState(() => _kycUpdated = true);
         });
   }
 
@@ -310,7 +309,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 try {
-                  await _authApi.logout();
+                  await widget.authController.logout();
                 } catch (_) {
                   if (!context.mounted) {
                     return;
@@ -323,14 +322,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   );
                 }
-                if (!context.mounted) {
-                  return;
-                }
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (_) => false,
-                );
               },
               style: FilledButton.styleFrom(
                 backgroundColor: colorScheme.error,
