@@ -17,6 +17,7 @@ class TimeSlotItem extends StatelessWidget {
     required this.status,
     this.teamName,
     this.bookingStatus,
+    this.attendanceBadge,
     this.price,
     this.onTap,
   });
@@ -26,6 +27,7 @@ class TimeSlotItem extends StatelessWidget {
   final SlotStatus status;
   final String? teamName;
   final String? bookingStatus;
+  final String? attendanceBadge;
   final String? price;
   final VoidCallback? onTap;
 
@@ -150,24 +152,50 @@ class TimeSlotItem extends StatelessWidget {
                               color: _getSubtitleColor(colorScheme),
                             ),
                           ),
-                          if (status == SlotStatus.booked && bookingStatus != null) ...[
+                          if (status == SlotStatus.booked &&
+                              (bookingStatus != null || attendanceBadge != null)) ...[
                             const SizedBox(height: AppSpacing.xs),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surface,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                bookingStatus!,
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.w700,
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                if (bookingStatus != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      bookingStatus!,
+                                      style: textTheme.labelSmall?.copyWith(
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                                 ),
-                              ),
+                                if (attendanceBadge != null)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _attendanceBadgeBackground(colorScheme),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      attendanceBadge!,
+                                      style: textTheme.labelSmall?.copyWith(
+                                        color: _attendanceBadgeTextColor(colorScheme),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ],
                         ],
@@ -247,5 +275,21 @@ class TimeSlotItem extends StatelessWidget {
       case SlotStatus.blocked:
         return colorScheme.onSurfaceVariant;
     }
+  }
+
+  Color _attendanceBadgeBackground(ColorScheme colorScheme) {
+    final badge = attendanceBadge?.toUpperCase() ?? '';
+    if (badge.contains('NO-SHOW') || badge.contains('NO SHOW')) {
+      return colorScheme.errorContainer;
+    }
+    return colorScheme.tertiaryContainer;
+  }
+
+  Color _attendanceBadgeTextColor(ColorScheme colorScheme) {
+    final badge = attendanceBadge?.toUpperCase() ?? '';
+    if (badge.contains('NO-SHOW') || badge.contains('NO SHOW')) {
+      return colorScheme.onErrorContainer;
+    }
+    return colorScheme.onTertiaryContainer;
   }
 }
