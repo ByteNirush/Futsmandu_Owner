@@ -132,11 +132,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                   widget.onSubmitted!();
                   return;
                 }
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/shell',
-                  (_) => false,
-                );
+                Navigator.pop(context);
               },
             ),
           ],

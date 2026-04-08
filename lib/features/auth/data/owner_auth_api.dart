@@ -1,23 +1,22 @@
+import '../../../core/config/owner_api_config.dart';
 import '../../../core/network/owner_api_client.dart';
-import '../../../core/services/secure_storage_service.dart';
+import '../domain/owner_auth_models.dart';
 
 class OwnerAuthApi {
-  OwnerAuthApi({OwnerApiClient? apiClient, SecureStorageService? secureStorage})
-    : _apiClient = apiClient ?? OwnerApiClient(),
-      _secureStorage = secureStorage ?? SecureStorageService();
+  OwnerAuthApi({OwnerApiClient? apiClient})
+    : _apiClient = apiClient ?? OwnerApiClient();
 
   final OwnerApiClient _apiClient;
-  final SecureStorageService _secureStorage;
 
-  Future<void> register({
+  Future<OwnerRegistrationResult> register({
     required String name,
     required String email,
     required String phone,
     required String password,
     String? businessName,
   }) async {
-    await _apiClient.post(
-      '/auth/register',
+    final result = await _apiClient.post(
+      OwnerApiConfig.registerEndpoint,
       requiresAuth: false,
       data: {
         'name': name.trim(),
@@ -28,6 +27,8 @@ class OwnerAuthApi {
           'business_name': businessName.trim(),
       },
     );
+
+    return OwnerRegistrationResult.fromApiJson(result);
   }
 
   Future<OwnerLoginResult> login({
@@ -35,48 +36,48 @@ class OwnerAuthApi {
     required String password,
   }) async {
     final result = await _apiClient.post(
-      '/auth/login',
+      OwnerApiConfig.loginEndpoint,
       requiresAuth: false,
       data: {'email': email.trim().toLowerCase(), 'password': password},
     );
 
     final accessToken = result['accessToken'];
     final owner = result['owner'];
-    if (accessToken is! String || owner is! Map<String, dynamic>) {
+    if (accessToken is! String ||
+        accessToken.isEmpty ||
+        owner is! Map<String, dynamic>) {
       throw ApiException('Invalid login response from server.');
     }
 
-    await _secureStorage.saveToken(accessToken);
-
     return OwnerLoginResult(
       accessToken: accessToken,
-      ownerId: owner['id']?.toString() ?? '',
-      ownerName: owner['name']?.toString() ?? '',
-      ownerEmail: owner['email']?.toString() ?? '',
+      owner: OwnerAuthProfile.fromLoginResponse(owner),
     );
   }
 
   Future<String> refresh() async {
-    final result = await _apiClient.post('/auth/refresh', requiresAuth: false);
+    final result = await _apiClient.post(
+      OwnerApiConfig.refreshEndpoint,
+      requiresAuth: false,
+    );
     final accessToken = result['accessToken'];
     if (accessToken is! String || accessToken.isEmpty) {
       throw ApiException('Invalid refresh response from server.');
     }
-    await _secureStorage.saveToken(accessToken);
     return accessToken;
   }
 
   Future<void> logout() async {
     try {
-      await _apiClient.post('/auth/logout');
+      await _apiClient.post(OwnerApiConfig.logoutEndpoint);
     } finally {
-      await _secureStorage.deleteToken();
+      await _apiClient.clearCookies();
     }
   }
 
   Future<UploadDocUrl> uploadDocs({required String docType}) async {
     final result = await _apiClient.post(
-      '/auth/upload-docs',
+      OwnerApiConfig.uploadDocsEndpoint,
       data: {'docType': docType},
     );
     final uploadUrl = result['uploadUrl'];
@@ -86,20 +87,6 @@ class OwnerAuthApi {
     }
     return UploadDocUrl(uploadUrl: uploadUrl, key: key);
   }
-}
-
-class OwnerLoginResult {
-  OwnerLoginResult({
-    required this.accessToken,
-    required this.ownerId,
-    required this.ownerName,
-    required this.ownerEmail,
-  });
-
-  final String accessToken;
-  final String ownerId;
-  final String ownerName;
-  final String ownerEmail;
 }
 
 class UploadDocUrl {
