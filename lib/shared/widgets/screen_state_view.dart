@@ -51,7 +51,7 @@ class ScreenStateView extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppSpacing.xs),
-                  const Text('This is a UI placeholder for error state handling.'),
+                  Text(emptySubtitle),
                   if (onRetry != null) ...[
                     const SizedBox(height: AppSpacing.sm),
                     TextButton.icon(

@@ -8,14 +8,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:futsmandu/features/auth/presentation/controllers/owner_auth_controller.dart';
 import 'package:futsmandu/features/auth/presentation/screens/login_screen.dart';
 import 'package:futsmandu/features/auth/presentation/screens/register_screen.dart';
 
 void main() {
   Widget buildAuthTestApp() {
+    final authController = OwnerAuthController();
     return MaterialApp(
-      home: LoginScreen(),
-      routes: {'/register': (_) => RegisterScreen()},
+      home: LoginScreen(authController: authController),
+      routes: {
+        '/register': (_) => RegisterScreen(authController: authController),
+      },
     );
   }
 
@@ -26,7 +30,7 @@ void main() {
     expect(find.text('Welcome Back'), findsOneWidget);
 
     // Both primary actions should be visible
-    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
     expect(find.text('Create Account'), findsOneWidget);
   });
 
