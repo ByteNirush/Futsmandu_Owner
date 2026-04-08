@@ -1,163 +1,426 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
-import '../../../../shared/widgets/app_card.dart';
+import '../../../../core/network/owner_api_client.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/app_loader.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
-import '../../../../shared/models/pricing_rule.dart';
+import '../../data/owner_pricing_api.dart';
 
 class CreatePricingRuleScreen extends StatefulWidget {
   const CreatePricingRuleScreen({
     super.key,
+    required this.courtId,
     this.rule,
     this.state = ScreenUiState.content,
   });
 
-  final PricingRule? rule;
+  final String courtId;
+  final OwnerPricingRule? rule;
   final ScreenUiState state;
 
   @override
-  State<CreatePricingRuleScreen> createState() => _CreatePricingRuleScreenState();
+  State<CreatePricingRuleScreen> createState() =>
+      _CreatePricingRuleScreenState();
 }
 
 class _CreatePricingRuleScreenState extends State<CreatePricingRuleScreen> {
-  late PricingRuleType _ruleType;
-  late double _price;
-  late int _priority;
-  late TimeOfDay _timeFrom;
-  late TimeOfDay _timeTo;
+  final OwnerPricingApi _pricingApi = OwnerPricingApi();
+  final _formKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
+  final _priorityController = TextEditingController();
+  final _hoursBeforeController = TextEditingController();
+
+  late String _ruleType;
+  late String _modifier;
+  late TimeOfDay _startTime;
+  late TimeOfDay _endTime;
+  late DateTime? _dateFrom;
+  late DateTime? _dateTo;
+  late Set<int> _daysOfWeek;
+  bool _isSubmitting = false;
+  String? _errorMessage;
+
+  static const _ruleTypes = [
+    'base',
+    'offpeak',
+    'weekend',
+    'peak',
+    'lastminute',
+    'custom',
+  ];
+
+  static const _modifiers = [
+    'fixed',
+    'percent_add',
+    'percent_off',
+  ];
+
+  static const _dayLabels = <int, String>{
+    0: 'Sun',
+    1: 'Mon',
+    2: 'Tue',
+    3: 'Wed',
+    4: 'Thu',
+    5: 'Fri',
+    6: 'Sat',
+  };
 
   @override
   void initState() {
     super.initState();
     final rule = widget.rule;
-    _ruleType = rule?.ruleType ?? PricingRuleType.base;
-    _price = rule?.priceNpr ?? 1000.0;
-    _priority = rule?.priority ?? 1;
-    _timeFrom = rule != null ? TimeOfDay.fromDateTime(rule.timeFrom) : const TimeOfDay(hour: 6, minute: 0);
-    _timeTo = rule != null ? TimeOfDay.fromDateTime(rule.timeTo) : const TimeOfDay(hour: 18, minute: 0);
-    _priceController.text = _price.toInt().toString();
+    _ruleType = rule?.ruleType ?? 'custom';
+    _modifier = rule?.modifier ?? 'fixed';
+    _startTime = _timeFromString(rule?.startTime) ?? const TimeOfDay(hour: 6, minute: 0);
+    _endTime = _timeFromString(rule?.endTime) ?? const TimeOfDay(hour: 18, minute: 0);
+    _dateFrom = rule?.dateFrom;
+    _dateTo = rule?.dateTo;
+    _daysOfWeek = (rule?.daysOfWeek.isNotEmpty ?? false)
+        ? rule!.daysOfWeek.toSet()
+        : <int>{0, 1, 2, 3, 4, 5, 6};
+
+    _priceController.text = ((rule?.pricePaisa ?? 100000) / 100).toStringAsFixed(0);
+    _priorityController.text = (rule?.priority ?? 1).toString();
+    _hoursBeforeController.text = (rule?.hoursBefore ?? '').toString();
   }
 
   @override
   void dispose() {
     _priceController.dispose();
+    _priorityController.dispose();
+    _hoursBeforeController.dispose();
     super.dispose();
   }
 
-  void _saveRule() {
-    final price = double.tryParse(_priceController.text) ?? _price;
-    final id = widget.rule?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
-    
-    final newRule = PricingRule(
-      id: id,
-      courtId: widget.rule?.courtId ?? 'court_1',
-      ruleType: _ruleType,
-      priority: _priority,
-      daysOfWeek: widget.rule?.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7], // default everyday
-      timeFrom: DateTime(2025, 1, 1, _timeFrom.hour, _timeFrom.minute),
-      timeTo: DateTime(2025, 1, 1, _timeTo.hour, _timeTo.minute),
-      dateFrom: widget.rule?.dateFrom ?? DateTime.now(),
-      dateTo: widget.rule?.dateTo ?? DateTime.now().add(const Duration(days: 365)),
-      priceNpr: price,
-    );
-    Navigator.of(context).pop(newRule);
+  TimeOfDay? _timeFromString(String? value) {
+    if (value == null || value.isEmpty) return null;
+    final parts = value.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
-  Future<void> _selectTime(bool isStart) async {
-    final initialTime = isStart ? _timeFrom : _timeTo;
-    final picked = await showTimePicker(context: context, initialTime: initialTime);
+  String _toApiTime(TimeOfDay value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String _toDateOnly(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  Future<void> _pickTime({required bool start}) async {
+    final initial = start ? _startTime : _endTime;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+    );
     if (picked != null) {
       setState(() {
-        if (isStart) {
-          _timeFrom = picked;
+        if (start) {
+          _startTime = picked;
         } else {
-          _timeTo = picked;
+          _endTime = picked;
         }
       });
     }
   }
 
+  Future<void> _pickDate({required bool from}) async {
+    final current = from ? _dateFrom : _dateTo;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+    );
+    if (picked != null) {
+      setState(() {
+        if (from) {
+          _dateFrom = picked;
+        } else {
+          _dateTo = picked;
+        }
+      });
+    }
+  }
+
+  Future<void> _saveRule() async {
+    if (_isSubmitting) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final priceNpr = double.tryParse(_priceController.text.trim());
+    final priority = int.tryParse(_priorityController.text.trim());
+    if (priceNpr == null || priority == null) {
+      setState(() => _errorMessage = 'Enter a valid price and priority.');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final days = _daysOfWeek.toList()..sort();
+      final startTime = _toApiTime(_startTime);
+      final endTime = _toApiTime(_endTime);
+      final dateFrom = _dateFrom != null ? _toDateOnly(_dateFrom!) : null;
+      final dateTo = _dateTo != null ? _toDateOnly(_dateTo!) : null;
+      final hoursBefore = int.tryParse(_hoursBeforeController.text.trim());
+
+      final result = widget.rule == null
+          ? await _pricingApi.createPricingRule(
+              courtId: widget.courtId,
+              ruleType: _ruleType,
+              priority: priority,
+              pricePaisa: (priceNpr * 100).round(),
+              modifier: _modifier,
+              daysOfWeek: days,
+              startTime: startTime,
+              endTime: endTime,
+              dateFrom: dateFrom,
+              dateTo: dateTo,
+              hoursBefore: hoursBefore,
+            )
+          : await _pricingApi.updatePricingRule(
+              ruleId: widget.rule!.id,
+              pricePaisa: (priceNpr * 100).round(),
+              modifier: _modifier,
+              daysOfWeek: days,
+              startTime: startTime,
+              endTime: endTime,
+              dateFrom: dateFrom,
+              dateTo: dateTo,
+              hoursBefore: hoursBefore,
+            );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(result);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = error.message);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Unable to save the pricing rule.');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Widget _buildTimeSelector({
+    required String label,
+    required TimeOfDay time,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.radius),
+      child: InputDecorator(
+        decoration: InputDecoration(labelText: label),
+        child: Text(time.format(context)),
+      ),
+    );
+  }
+
+  Widget _buildDateSelector({
+    required String label,
+    required DateTime? value,
+    required VoidCallback onTap,
+  }) {
+    final text = value == null
+        ? 'Optional'
+        : '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.radius),
+      child: InputDecorator(
+        decoration: InputDecoration(labelText: label),
+        child: Text(text),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isEdit = widget.rule != null;
-    
+    if (_isSubmitting) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.rule == null ? 'Create Pricing Rule' : 'Edit Pricing Rule'),
+        ),
+        body: const Center(child: AppLoader()),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? 'Edit Pricing Rule' : 'Create Pricing Rule')),
+      appBar: AppBar(
+        title: Text(widget.rule == null ? 'Create Pricing Rule' : 'Edit Pricing Rule'),
+      ),
       body: ScreenStateView(
         state: widget.state,
         emptyTitle: 'No pricing form',
-        emptySubtitle: 'UI placeholder for empty pricing rule form.',
+        emptySubtitle: 'Configure custom pricing for the selected court.',
         content: ListView(
           padding: const EdgeInsets.all(AppSpacing.sm),
           children: [
             AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<PricingRuleType>(
-                    initialValue: _ruleType,
-                    decoration: const InputDecoration(labelText: 'Rule Type'),
-                    items: PricingRuleType.values.map((type) {
-                      return DropdownMenuItem(
-                        value: type,
-                        child: Text(type.name.toUpperCase()),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _ruleType = val);
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectTime(true),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Start Time'),
-                            child: Text(_timeFrom.format(context)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectTime(false),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(labelText: 'End Time'),
-                            child: Text(_timeTo.format(context)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  TextField(
-                    controller: _priceController,
-                    decoration: const InputDecoration(
-                      labelText: 'Price (NPR)',
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: _ruleType,
+                      decoration: const InputDecoration(labelText: 'Rule type'),
+                      items: _ruleTypes
+                          .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                          .toList(growable: false),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _ruleType = value);
+                        }
+                      },
                     ),
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  DropdownButtonFormField<int>(
-                    initialValue: _priority,
-                    decoration: const InputDecoration(labelText: 'Priority (Lower is higher priority)'),
-                    items: List.generate(5, (i) => i + 1).map((p) {
-                      return DropdownMenuItem(value: p, child: Text(p.toString()));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setState(() => _priority = val);
-                    },
-                  ),
-                ],
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _priorityController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Priority'),
+                            validator: (value) {
+                              if (int.tryParse(value ?? '') == null) {
+                                return 'Enter a valid priority';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _priceController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Price (NPR)'),
+                            validator: (value) {
+                              if (double.tryParse(value ?? '') == null) {
+                                return 'Enter a valid price';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    DropdownButtonFormField<String>(
+                      initialValue: _modifier,
+                      decoration: const InputDecoration(labelText: 'Modifier'),
+                      items: _modifiers
+                          .map((modifier) => DropdownMenuItem(value: modifier, child: Text(modifier)))
+                          .toList(growable: false),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _modifier = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.xs,
+                      runSpacing: AppSpacing.xs,
+                      children: _dayLabels.entries.map((entry) {
+                        final selected = _daysOfWeek.contains(entry.key);
+                        return FilterChip(
+                          label: Text(entry.value),
+                          selected: selected,
+                          onSelected: (value) {
+                            setState(() {
+                              if (value) {
+                                _daysOfWeek.add(entry.key);
+                              } else {
+                                _daysOfWeek.remove(entry.key);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(growable: false),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTimeSelector(
+                            label: 'Start time',
+                            time: _startTime,
+                            onTap: () => _pickTime(start: true),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: _buildTimeSelector(
+                            label: 'End time',
+                            time: _endTime,
+                            onTap: () => _pickTime(start: false),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildDateSelector(
+                            label: 'Date from',
+                            value: _dateFrom,
+                            onTap: () => _pickDate(from: true),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: _buildDateSelector(
+                            label: 'Date to',
+                            value: _dateTo,
+                            onTap: () => _pickDate(from: false),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _hoursBeforeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Hours before booking',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                _errorMessage!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             AppButton(
-              label: 'Save Rule',
+              label: widget.rule == null ? 'Create Rule' : 'Update Rule',
               onPressed: _saveRule,
             ),
           ],
