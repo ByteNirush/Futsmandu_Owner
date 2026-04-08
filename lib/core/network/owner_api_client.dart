@@ -2,7 +2,9 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
-import '../services/secure_storage_service.dart';
+import '../config/owner_api_config.dart';
+import '../../features/auth/data/owner_auth_session_store.dart';
+import 'secure_cookie_storage.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
@@ -20,21 +22,19 @@ class OwnerApiClient {
   static final OwnerApiClient _instance = OwnerApiClient._internal();
   factory OwnerApiClient() => _instance;
 
-  static const String _baseUrl = String.fromEnvironment(
-    'OWNER_API_BASE_URL',
-    defaultValue: 'http://localhost:3002/api/v1/owner',
+  final OwnerAuthSessionStore _sessionStore = OwnerAuthSessionStore();
+  static final PersistCookieJar _cookieJar = PersistCookieJar(
+    storage: const SecureCookieStorage(),
   );
-
-  final SecureStorageService _secureStorage = SecureStorageService();
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: OwnerApiConfig.baseUrl,
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
       sendTimeout: const Duration(seconds: 20),
       headers: {'Content-Type': 'application/json'},
     ),
-  )..interceptors.add(CookieManager(CookieJar()));
+  )..interceptors.add(CookieManager(_cookieJar));
 
   Future<Map<String, dynamic>> get(
     String path, {
@@ -62,6 +62,32 @@ class OwnerApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Object? data,
+    bool requiresAuth = true,
+  }) {
+    return _request(
+      path,
+      method: 'PUT',
+      data: data,
+      requiresAuth: requiresAuth,
+    );
+  }
+
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    Object? data,
+    bool requiresAuth = true,
+  }) {
+    return _request(
+      path,
+      method: 'DELETE',
+      data: data,
+      requiresAuth: requiresAuth,
+    );
+  }
+
   Future<Map<String, dynamic>> _request(
     String path, {
     required String method,
@@ -72,7 +98,7 @@ class OwnerApiClient {
   }) async {
     final headers = <String, dynamic>{};
     if (requiresAuth) {
-      final token = await _secureStorage.getToken();
+      final token = await _sessionStore.getAccessToken();
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -121,22 +147,27 @@ class OwnerApiClient {
 
   Future<bool> _tryRefreshToken() async {
     try {
-      final response = await _dio.post<Map<String, dynamic>>('/auth/refresh');
+      final response = await _dio.post<Map<String, dynamic>>(
+        OwnerApiConfig.refreshEndpoint,
+      );
       final body = response.data;
       final data = body?['data'];
       final accessToken = data is Map<String, dynamic>
           ? data['accessToken']
           : null;
       if (accessToken is String && accessToken.isNotEmpty) {
-        await _secureStorage.saveToken(accessToken);
+        await _sessionStore.saveAccessToken(accessToken);
         return true;
       }
       return false;
     } catch (_) {
-      await _secureStorage.deleteToken();
+      await _cookieJar.deleteAll();
+      await _sessionStore.clearAll();
       return false;
     }
   }
+
+  Future<void> clearCookies() => _cookieJar.deleteAll();
 
   ApiException _toApiException(DioException error) {
     final responseBody = error.response?.data;
