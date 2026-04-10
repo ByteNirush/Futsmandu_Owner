@@ -24,6 +24,19 @@ class OwnerMediaApi {
     return parsed;
   }
 
+  Future<MediaUploadUrlResponse> requestVenueCoverUploadUrl({
+    required String venueId,
+  }) async {
+    final response = await _apiClient.post(
+      OwnerApiConfig.venueCoverUploadUrlEndpoint(venueId),
+    );
+    final parsed = MediaUploadUrlResponse.fromJson(response);
+    if (parsed.uploadUrl.isEmpty || parsed.key.isEmpty) {
+      throw ApiException('Invalid venue cover upload URL response from server.');
+    }
+    return parsed;
+  }
+
   Future<MediaConfirmUploadResponse> confirmUpload(
     MediaConfirmUploadRequest request,
   ) async {
@@ -32,6 +45,13 @@ class OwnerMediaApi {
       data: request.toJson(),
     );
     return MediaConfirmUploadResponse.fromJson(response);
+  }
+
+  Future<MediaAssetStatusResponse> getUploadStatus(String assetId) async {
+    final response = await _apiClient.get(
+      OwnerApiConfig.mediaStatusEndpoint(assetId),
+    );
+    return MediaAssetStatusResponse.fromJson(response);
   }
 }
 
