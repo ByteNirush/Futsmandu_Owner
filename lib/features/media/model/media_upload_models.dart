@@ -104,13 +104,40 @@ class MediaConfirmUploadRequest {
 }
 
 class MediaConfirmUploadResponse {
-  const MediaConfirmUploadResponse({required this.message});
+  const MediaConfirmUploadResponse({
+    required this.message,
+    this.assetId,
+    this.status,
+  });
 
   final String message;
+  final String? assetId;
+  final String? status;
 
   factory MediaConfirmUploadResponse.fromJson(Map<String, dynamic> json) {
     return MediaConfirmUploadResponse(
       message: (json['message'] as String?) ?? 'Upload confirmed.',
+      assetId:
+          (json['assetId'] as String?) ??
+          (json['asset_id'] as String?) ??
+          (json['id'] as String?),
+      status: (json['status'] as String?) ?? (json['assetStatus'] as String?),
+    );
+  }
+}
+
+class MediaAssetStatusResponse {
+  const MediaAssetStatusResponse({required this.status});
+
+  final String status;
+
+  bool get isReady => status.toLowerCase() == 'ready';
+  bool get isFailed => status.toLowerCase() == 'failed';
+  bool get isProcessing => status.toLowerCase() == 'processing';
+
+  factory MediaAssetStatusResponse.fromJson(Map<String, dynamic> json) {
+    return MediaAssetStatusResponse(
+      status: (json['status'] as String?) ?? 'processing',
     );
   }
 }
@@ -119,10 +146,16 @@ class MediaUploadResult {
   const MediaUploadResult({
     required this.key,
     required this.confirmMessage,
+    required this.status,
     this.cdnUrl,
+    this.assetId,
   });
 
   final String key;
   final String confirmMessage;
+  final MediaAssetStatusResponse status;
   final String? cdnUrl;
+  final String? assetId;
+
+  bool get isReady => status.isReady;
 }
