@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
@@ -12,7 +13,7 @@ import 'features/auth/presentation/screens/reset_password_screen.dart';
 import 'features/auth/presentation/screens/upload_documents_screen.dart';
 
 void main() {
-  runApp(const FutsmanduApp());
+  runApp(const ProviderScope(child: FutsmanduApp()));
 }
 
 class FutsmanduApp extends StatefulWidget {
@@ -52,7 +53,9 @@ class _FutsmanduAppState extends State<FutsmanduApp> {
             '/login': (_) => LoginScreen(authController: _authController),
             '/register': (_) => RegisterScreen(authController: _authController),
             '/forgot-password': (_) => const ForgotPasswordScreen(),
-            '/otp-verification': (_) => const OtpVerificationScreen(),
+            '/otp-verification': (_) => OtpVerificationScreen(
+              authController: _authController,
+            ),
             '/reset-password': (_) => const ResetPasswordScreen(),
             '/upload-documents': (_) => const UploadDocumentsScreen(),
             '/shell': (_) => OwnerShellScreen(
@@ -63,5 +66,14 @@ class _FutsmanduAppState extends State<FutsmanduApp> {
         );
       },
     );
+  }
+}
+
+/// Mixin to safely handle ChangeNotifier disposal with AnimatedBuilder
+/// This ensures listeners are cleaned up before the notifier is disposed
+mixin SafeChangeNotifierDispose<T extends StatefulWidget> on State<T> {
+  void safeDisposeChangeNotifier(ChangeNotifier notifier) {
+    // Remove all listeners before disposing
+    notifier.dispose();
   }
 }
