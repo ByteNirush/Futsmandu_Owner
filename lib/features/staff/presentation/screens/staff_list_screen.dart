@@ -22,6 +22,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   List<OwnerStaffMember> _staff = const [];
+  final Set<String> _busyStaffIds = <String>{};
 
   @override
   void initState() {
@@ -59,9 +60,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
 
   Future<void> _addStaff() async {
     final result = await Navigator.of(context).push<OwnerStaffMember>(
-      MaterialPageRoute(
-        builder: (_) => const AddStaffScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AddStaffScreen()),
     );
 
     if (result != null) {
@@ -70,21 +69,24 @@ class _StaffListScreenState extends State<StaffListScreen> {
   }
 
   Future<void> _changeRole(OwnerStaffMember member) async {
+    if (_busyStaffIds.contains(member.id)) {
+      return;
+    }
+
     final selected = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Update role'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final role in const ['OWNER_ADMIN', 'OWNER_STAFF'])
-              RadioListTile<String>(
-                value: role,
-                groupValue: member.role,
-                onChanged: (value) => Navigator.of(context).pop(value),
-                title: Text(role),
-              ),
-          ],
+        content: RadioGroup<String>(
+          groupValue: member.role,
+          onChanged: (value) => Navigator.of(context).pop(value),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final role in const ['OWNER_ADMIN', 'OWNER_STAFF'])
+                RadioListTile<String>(value: role, title: Text(role)),
+            ],
+          ),
         ),
       ),
     );
@@ -93,22 +95,38 @@ class _StaffListScreenState extends State<StaffListScreen> {
       return;
     }
 
+    setState(() => _busyStaffIds.add(member.id));
     try {
-      await _staffApi.updateRole(staffId: member.id, role: selected);
+      final result = await _staffApi.updateRole(staffId: member.id, role: selected);
       if (!mounted) return;
       await _loadStaff();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message)),
+      );
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unable to update staff role.')),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _busyStaffIds.remove(member.id));
+      }
     }
   }
 
   Future<void> _deactivate(OwnerStaffMember member) async {
+    if (_busyStaffIds.contains(member.id)) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -128,22 +146,26 @@ class _StaffListScreenState extends State<StaffListScreen> {
     );
 
     if (confirmed != true) return;
-
+    setState(() => _busyStaffIds.add(member.id));
     try {
-      await _staffApi.deactivate(member.id);
+      final result = await _staffApi.deactivate(member.id);
       if (!mounted) return;
       await _loadStaff();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Staff member deactivated')),
+      messenger.showSnackBar(
+        SnackBar(content: Text(result.message)),
       );
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Unable to deactivate staff member.')),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _busyStaffIds.remove(member.id));
+      }
     }
   }
 
@@ -168,19 +190,22 @@ class _StaffListScreenState extends State<StaffListScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.sm),
       itemCount: _staff.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {
         final member = _staff[index];
         return AppCard(
           child: ListTile(
             leading: CircleAvatar(
               child: Text(
-                member.name.isNotEmpty ? member.name.substring(0, 1).toUpperCase() : '?',
+                member.name.isNotEmpty
+                    ? member.name.substring(0, 1).toUpperCase()
+                    : '?',
               ),
             ),
             title: Text(member.name),
             subtitle: Text('${member.roleLabel} - ${member.phone}'),
             trailing: PopupMenuButton<String>(
+              enabled: !_busyStaffIds.contains(member.id),
               onSelected: (value) {
                 if (value == 'role') {
                   _changeRole(member);

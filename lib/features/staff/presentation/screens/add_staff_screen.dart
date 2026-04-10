@@ -52,6 +52,11 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   bool _isSubmitting = false;
   String? _errorMessage;
 
+  static final RegExp _emailRegex = RegExp(
+    r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
+  );
+  static final RegExp _tenDigitPhoneRegex = RegExp(r'^\d{10}$');
+
   List<String> get _roles => widget.roles ?? const ['OWNER_ADMIN', 'OWNER_STAFF'];
 
   @override
@@ -137,8 +142,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                       decoration: InputDecoration(labelText: widget.emailLabel),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        final email = value?.trim() ?? '';
+                        if (email.isEmpty) {
                           return 'Email is required';
+                        }
+                        if (!_emailRegex.hasMatch(email)) {
+                          return 'Enter a valid email address';
                         }
                         return null;
                       },
@@ -152,8 +161,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                       ),
                       keyboardType: TextInputType.phone,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        final phone = value?.trim() ?? '';
+                        if (phone.isEmpty) {
                           return 'Phone number is required';
+                        }
+                        if (!_tenDigitPhoneRegex.hasMatch(phone)) {
+                          return 'Phone number must be exactly 10 digits';
                         }
                         return null;
                       },
@@ -164,7 +177,8 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                       decoration: InputDecoration(labelText: widget.passwordLabel),
                       obscureText: true,
                       validator: (value) {
-                        if (value == null || value.length < 8) {
+                        final password = value ?? '';
+                        if (password.length < 8) {
                           return 'Password must be at least 8 characters';
                         }
                         return null;

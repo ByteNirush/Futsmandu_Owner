@@ -39,7 +39,7 @@ class OwnerStaffApi {
     return OwnerStaffMember.fromJson(response);
   }
 
-  Future<OwnerStaffMember> updateRole({
+  Future<StaffRoleUpdateResult> updateRole({
     required String staffId,
     required String role,
   }) async {
@@ -47,11 +47,14 @@ class OwnerStaffApi {
       '${OwnerApiConfig.staffEndpoint}/$staffId/role',
       data: {'role': role},
     );
-    return OwnerStaffMember.fromJson(response);
+    return StaffRoleUpdateResult.fromJson(response);
   }
 
-  Future<void> deactivate(String staffId) async {
-    await _apiClient.delete('${OwnerApiConfig.staffEndpoint}/$staffId');
+  Future<StaffDeactivateResult> deactivate(String staffId) async {
+    final response = await _apiClient.delete(
+      '${OwnerApiConfig.staffEndpoint}/$staffId',
+    );
+    return StaffDeactivateResult.fromJson(response);
   }
 }
 
@@ -95,5 +98,37 @@ class OwnerStaffMember {
       default:
         return role;
     }
+  }
+}
+
+class StaffRoleUpdateResult {
+  const StaffRoleUpdateResult({
+    required this.id,
+    required this.role,
+    required this.message,
+  });
+
+  final String id;
+  final String role;
+  final String message;
+
+  factory StaffRoleUpdateResult.fromJson(Map<String, dynamic> json) {
+    return StaffRoleUpdateResult(
+      id: (json['id'] as String?) ?? '',
+      role: (json['role'] as String?) ?? '',
+      message: (json['message'] as String?) ?? 'Role updated',
+    );
+  }
+}
+
+class StaffDeactivateResult {
+  const StaffDeactivateResult({required this.message});
+
+  final String message;
+
+  factory StaffDeactivateResult.fromJson(Map<String, dynamic> json) {
+    return StaffDeactivateResult(
+      message: (json['message'] as String?) ?? 'Staff deactivated',
+    );
   }
 }
