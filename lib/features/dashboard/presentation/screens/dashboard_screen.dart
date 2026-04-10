@@ -5,6 +5,7 @@ import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../auth/domain/owner_auth_models.dart';
 import '../../../auth/presentation/controllers/owner_auth_controller.dart';
+import '../../data/dashboard_controller.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/summary_card.dart';
@@ -23,61 +24,60 @@ class DashboardQuickAction {
   final WidgetBuilder builder;
 }
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
-    this.state = ScreenUiState.content,
     this.quickActions = _defaultQuickActions,
     this.authController,
   });
 
-  final ScreenUiState state;
   final List<DashboardQuickAction> quickActions;
   final OwnerAuthController? authController;
 
   static const _defaultQuickActions = <DashboardQuickAction>[];
 
-  static const _revenueSummary = _SummaryItem(
-    title: 'Revenue Today',
-    value: 'NPR 28,500',
-    icon: Icons.payments_outlined,
-  );
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
 
-  static const _otherSummaryItems = [
-    _SummaryItem(
-      title: 'Bookings',
-      value: '18',
-      icon: Icons.calendar_today_rounded,
-    ),
-    _SummaryItem(
-      title: 'Occupancy',
-      value: '76%',
-      icon: Icons.stacked_bar_chart_rounded,
-    ),
-    _SummaryItem(
-      title: 'Active Courts',
-      value: '6',
-      icon: Icons.sports_soccer_rounded,
-    ),
-  ];
+class _DashboardScreenState extends State<DashboardScreen> {
+  late final DashboardController _controller;
 
-  static const _upcomingBookings = [
-    _UpcomingBookingData(
-      teamName: 'Team Strikers',
-      courtName: 'Court A',
-      timeSlot: '7:00 PM - 8:00 PM',
-      status: 'Confirmed',
-    ),
-    _UpcomingBookingData(
-      teamName: 'FC Thunder',
-      courtName: 'Court C',
-      timeSlot: '8:00 PM - 9:00 PM',
-      status: 'Pending',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _controller = DashboardController();
+    _controller.addListener(_onControllerChanged);
+    _controller.loadOverview();
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  ScreenUiState get _screenState {
+    switch (_controller.loadState) {
+      case DashboardLoadState.idle:
+      case DashboardLoadState.loading:
+        return ScreenUiState.loading;
+      case DashboardLoadState.error:
+        return ScreenUiState.error;
+      case DashboardLoadState.loaded:
+        return ScreenUiState.content;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final overview = _controller.overview;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
@@ -90,51 +90,70 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
       body: ScreenStateView(
-        state: state,
+        state: _screenState,
         emptyTitle: 'No overview data',
-        emptySubtitle: 'Dashboard metrics will appear here once you have bookings.',
+        emptySubtitle:
+            'Dashboard metrics will appear here once you have bookings.',
+        onRetry: _controller.refresh,
         content: RefreshIndicator(
-          onRefresh: () async {
-            // Refresh data
-          },
+          onRefresh: _controller.refresh,
           child: ListView(
             padding: const EdgeInsets.all(AppSpacing.xs),
             children: [
               const DashboardHeader(),
               const SizedBox(height: AppSpacing.md),
-              if (authController != null && authController!.kycStatus != KycVerificationStatus.approved)
+              if (widget.authController != null &&
+                  widget.authController!.kycStatus !=
+                      KycVerificationStatus.approved)
                 _KycStatusBanner(
-                  status: authController!.kycStatus,
-                  rejectionReason: authController!.kycRejectionReason,
+                  status: widget.authController!.kycStatus,
+                  rejectionReason: widget.authController!.kycRejectionReason,
                   hasUploadedAnyKycDocument:
-                      authController!.hasUploadedAnyKycDocument,
+                      widget.authController!.hasUploadedAnyKycDocument,
                   onTap: () {
                     Navigator.of(context).pushNamed('/upload-documents');
                   },
                 ),
-              if (authController != null && authController!.kycStatus != KycVerificationStatus.approved)
+              if (widget.authController != null &&
+                  widget.authController!.kycStatus !=
+                      KycVerificationStatus.approved)
                 const SizedBox(height: AppSpacing.md),
               const _DashboardSectionHeader(title: 'Today\'s Overview'),
               const SizedBox(height: AppSpacing.sm),
+              // Revenue — full-width card
               SummaryCard(
-                title: _revenueSummary.title,
-                value: _revenueSummary.value,
-                icon: _revenueSummary.icon,
+                title: 'Revenue Today',
+                value: overview.revenueToday,
+                icon: Icons.payments_outlined,
               ),
               const SizedBox(height: AppSpacing.sm),
+              // Bookings / Occupancy / Active Courts — 3 equal cards
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   spacing: AppSpacing.sm,
                   children: [
-                    for (int i = 0; i < _otherSummaryItems.length; i++)
-                      Expanded(
-                        child: SummaryCard(
-                          title: _otherSummaryItems[i].title,
-                          value: _otherSummaryItems[i].value,
-                          icon: _otherSummaryItems[i].icon,
-                        ),
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Bookings',
+                        value: overview.bookingsToday.toString(),
+                        icon: Icons.calendar_today_rounded,
                       ),
+                    ),
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Pending',
+                        value: overview.pendingBookings.toString(),
+                        icon: Icons.hourglass_bottom_rounded,
+                      ),
+                    ),
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Active Courts',
+                        value: overview.activeCourts.toString(),
+                        icon: Icons.sports_soccer_rounded,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -148,14 +167,14 @@ class DashboardScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   spacing: AppSpacing.sm,
                   children: [
-                    for (int i = 0; i < quickActions.length; i++)
+                    for (int i = 0; i < widget.quickActions.length; i++)
                       Expanded(
                         child: QuickActionButton(
-                          title: quickActions[i].title,
-                          icon: quickActions[i].icon,
+                          title: widget.quickActions[i].title,
+                          icon: widget.quickActions[i].icon,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: quickActions[i].builder,
+                              builder: widget.quickActions[i].builder,
                             ),
                           ),
                         ),
@@ -169,18 +188,18 @@ class DashboardScreen extends StatelessWidget {
               Column(
                 spacing: AppSpacing.sm,
                 children: [
-                  for (var i = 0; i < _upcomingBookings.length; i++)
+                  for (final booking in overview.upcomingBookings)
                     UpcomingBookingItem(
-                      teamName: _upcomingBookings[i].teamName,
-                      courtName: _upcomingBookings[i].courtName,
-                      timeSlot: _upcomingBookings[i].timeSlot,
-                      status: _upcomingBookings[i].status,
+                      teamName: booking.customerName,
+                      courtName: booking.courtName,
+                      timeSlot: booking.timeSlot,
+                      status: booking.status,
                     ),
-                  if (_upcomingBookings.isEmpty)
+                  if (overview.upcomingBookings.isEmpty)
                     const Center(
                       child: Padding(
                         padding: EdgeInsets.all(AppSpacing.md),
-                        child: Text('No upcoming bookings'),
+                        child: Text('No upcoming bookings for today'),
                       ),
                     ),
                 ],
@@ -193,6 +212,10 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// KYC Banner (unchanged)
+// ---------------------------------------------------------------------------
 
 class _KycStatusBanner extends StatelessWidget {
   const _KycStatusBanner({
@@ -263,7 +286,9 @@ class _KycStatusBanner extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  _isRejected ? Icons.error_rounded : Icons.hourglass_top_rounded,
+                  _isRejected
+                      ? Icons.error_rounded
+                      : Icons.hourglass_top_rounded,
                   color: onContainerColor,
                   size: 28,
                 ),
@@ -275,16 +300,16 @@ class _KycStatusBanner extends StatelessWidget {
                       Text(
                         _title,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: onContainerColor,
-                          fontWeight: FontWeight.w700,
-                        ),
+                              color: onContainerColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         _subtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: onContainerColor,
-                        ),
+                              color: onContainerColor,
+                            ),
                       ),
                     ],
                   ),
@@ -301,6 +326,10 @@ class _KycStatusBanner extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Section header (unchanged)
+// ---------------------------------------------------------------------------
 
 class _DashboardSectionHeader extends StatelessWidget {
   const _DashboardSectionHeader({required this.title});
@@ -325,37 +354,11 @@ class _DashboardSectionHeader extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+                  fontWeight: FontWeight.w700,
+                ),
           ),
         ],
       ),
     );
   }
-}
-
-class _SummaryItem {
-  const _SummaryItem({
-    required this.title,
-    required this.value,
-    required this.icon,
-  });
-
-  final String title;
-  final String value;
-  final IconData icon;
-}
-
-class _UpcomingBookingData {
-  const _UpcomingBookingData({
-    required this.teamName,
-    required this.courtName,
-    required this.timeSlot,
-    required this.status,
-  });
-
-  final String teamName;
-  final String courtName;
-  final String timeSlot;
-  final String status;
 }
