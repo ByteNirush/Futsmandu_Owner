@@ -25,6 +25,7 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
   OwnerAnalyticsHeatmap? _heatmap;
   List<OwnerNoShowRateItem> _noShowRates = const [];
   String _groupBy = 'day';
+  String _rangePreset = 'month';
   late DateTimeRange _selectedRange;
 
   @override
@@ -127,10 +128,37 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
     if (picked == null) return;
 
     setState(() {
+      _rangePreset = 'custom';
       _selectedRange = DateTimeRange(
         start: DateTime(picked.start.year, picked.start.month, picked.start.day),
         end: DateTime(picked.end.year, picked.end.month, picked.end.day),
       );
+    });
+    await _loadAnalytics();
+  }
+
+  DateTimeRange _dateRangeForPreset(String preset) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (preset == 'week') {
+      return DateTimeRange(
+        start: today.subtract(const Duration(days: 6)),
+        end: today,
+      );
+    }
+    return DateTimeRange(
+      start: today.subtract(const Duration(days: 29)),
+      end: today,
+    );
+  }
+
+  Future<void> _applyPreset(String preset) async {
+    if (_rangePreset == preset) {
+      return;
+    }
+    setState(() {
+      _rangePreset = preset;
+      _selectedRange = _dateRangeForPreset(preset);
     });
     await _loadAnalytics();
   }
@@ -401,30 +429,46 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
           padding: const EdgeInsets.all(AppSpacing.sm),
           children: [
             AppCard(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Date Range',
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          _rangeLabel(),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                      ],
-                    ),
+                  Text(
+                    'Date Range',
+                    style: Theme.of(context).textTheme.labelMedium,
                   ),
-                  OutlinedButton.icon(
-                    onPressed: _pickDateRange,
-                    icon: const Icon(Icons.date_range_outlined),
-                    label: const Text('Change'),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    _rangeLabel(),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(value: 'week', label: Text('Weekly')),
+                            ButtonSegment(value: 'month', label: Text('Monthly')),
+                          ],
+                          selected: {
+                            _rangePreset == 'week' ? 'week' : 'month',
+                          },
+                          onSelectionChanged: (value) {
+                            _applyPreset(value.first);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      OutlinedButton.icon(
+                        onPressed: _pickDateRange,
+                        icon: const Icon(Icons.date_range_outlined),
+                        label: Text(
+                          _rangePreset == 'custom' ? 'Custom*' : 'Custom',
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -71,7 +71,7 @@ class OwnerAnalyticsApi {
       },
     );
 
-    final items = response['items'];
+    final items = response['data'] ?? response['items'];
     if (items is! List) {
       return const [];
     }
