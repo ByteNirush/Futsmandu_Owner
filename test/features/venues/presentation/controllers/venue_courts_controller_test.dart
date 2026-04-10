@@ -74,6 +74,21 @@ class FakeCourtsRepository implements VenuesRepository {
   }
 
   @override
+  Future<VenueImageUploadConfirmation> confirmVenueImageUploadDetailed({
+    required String venueId,
+    required VenueImageUploadRequest upload,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<VenueImageUploadStatus> pollVenueImageUploadStatus({
+    required String assetId,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<VenueImageUploadRequest> requestVenueImageUploadUrl({
     required String venueId,
     required String fileName,

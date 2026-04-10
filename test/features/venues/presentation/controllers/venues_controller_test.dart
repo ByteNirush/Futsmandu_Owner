@@ -145,6 +145,31 @@ class FakeVenuesRepository implements VenuesRepository {
   }
 
   @override
+  Future<VenueImageUploadConfirmation> confirmVenueImageUploadDetailed({
+    required String venueId,
+    required VenueImageUploadRequest upload,
+  }) async {
+    if (shouldThrow) {
+      throw StateError('confirm image failed');
+    }
+    return VenueImageUploadConfirmation(
+      message: 'Upload confirmed.',
+      assetId: upload.assetId,
+      status: 'ready',
+    );
+  }
+
+  @override
+  Future<VenueImageUploadStatus> pollVenueImageUploadStatus({
+    required String assetId,
+  }) async {
+    if (shouldThrow) {
+      throw StateError('poll image status failed');
+    }
+    return const VenueImageUploadStatus(status: 'ready');
+  }
+
+  @override
   Future<VenueImageUploadRequest> requestVenueImageUploadUrl({
     required String venueId,
     required String fileName,
@@ -158,6 +183,7 @@ class FakeVenuesRepository implements VenuesRepository {
       uploadUrl: 'https://example.com/upload',
       method: 'PUT',
       headers: <String, String>{},
+      expiresIn: 600,
       imageUrl: 'https://cdn.example.com/image.jpg',
     );
   }
