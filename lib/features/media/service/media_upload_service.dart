@@ -17,17 +17,23 @@ class MediaUploadService {
     required List<int> bytes,
     required String contentType,
     OwnerKycDocType? docType,
+    bool pollUntilReady = false,
+    void Function(String message)? onStatusMessage,
     void Function(double progress)? onUploadProgress,
   }) async {
-    final uploadUrlResponse = await _mediaApi.requestUploadUrl(
-      MediaUploadUrlRequest(
-        assetType: assetType,
-        entityId: entityId,
-        docType: docType,
-        contentType: contentType,
-      ),
-    );
+    onStatusMessage?.call('Requesting upload URL...');
+    final uploadUrlResponse = assetType == OwnerMediaAssetType.venueCover
+        ? await _mediaApi.requestVenueCoverUploadUrl(venueId: entityId)
+        : await _mediaApi.requestUploadUrl(
+            MediaUploadUrlRequest(
+              assetType: assetType,
+              entityId: entityId,
+              docType: docType,
+              contentType: contentType,
+            ),
+          );
 
+    onStatusMessage?.call('Uploading image...');
     await _storageUploader.uploadBytes(
       uploadUrl: uploadUrlResponse.uploadUrl,
       bytes: bytes,
@@ -36,6 +42,7 @@ class MediaUploadService {
       onProgress: onUploadProgress,
     );
 
+    onStatusMessage?.call('Confirming upload...');
     final confirm = await _mediaApi.confirmUpload(
       MediaConfirmUploadRequest(
         key: uploadUrlResponse.key,
@@ -43,10 +50,38 @@ class MediaUploadService {
       ),
     );
 
+    var status = MediaAssetStatusResponse(
+      status: confirm.status ?? 'processing',
+    );
+
+    if (pollUntilReady && confirm.assetId != null) {
+      onStatusMessage?.call('Waiting for image processing...');
+      status = await _pollUntilReady(confirm.assetId!);
+    }
+
+    onStatusMessage?.call(
+      status.isReady ? 'Image is ready.' : 'Image upload completed.',
+    );
+
     return MediaUploadResult(
       key: uploadUrlResponse.key,
       cdnUrl: uploadUrlResponse.cdnUrl,
       confirmMessage: confirm.message,
+      assetId: confirm.assetId,
+      status: status,
     );
+  }
+
+  Future<MediaAssetStatusResponse> _pollUntilReady(String assetId) async {
+    const maxAttempts = 30;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      final status = await _mediaApi.getUploadStatus(assetId);
+      if (status.isReady || status.isFailed) {
+        return status;
+      }
+      await Future<void>.delayed(const Duration(seconds: 2));
+    }
+
+    return const MediaAssetStatusResponse(status: 'processing');
   }
 }
