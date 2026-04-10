@@ -111,9 +111,27 @@ class VenuesRepositoryImpl implements VenuesRepository {
     required String venueId,
     required VenueImageUploadRequest upload,
   }) {
-    return _venuesDataSource.confirmVenueImageUpload(
+    return _venuesDataSource.confirmVenueImageUploadDetailed(
+      venueId: venueId,
+      upload: upload,
+    ).then((confirmation) => upload.resolvedImageUrl ?? confirmation.assetId);
+  }
+
+  @override
+  Future<VenueImageUploadConfirmation> confirmVenueImageUploadDetailed({
+    required String venueId,
+    required VenueImageUploadRequest upload,
+  }) {
+    return _venuesDataSource.confirmVenueImageUploadDetailed(
       venueId: venueId,
       upload: upload,
     );
+  }
+
+  @override
+  Future<VenueImageUploadStatus> pollVenueImageUploadStatus({
+    required String assetId,
+  }) {
+    return _venuesDataSource.pollVenueImageUploadStatus(assetId: assetId);
   }
 }

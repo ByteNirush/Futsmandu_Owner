@@ -50,12 +50,7 @@ class OwnerVenuesRemoteDataSource {
     }
 
     final response = await _apiClient.post(
-      OwnerApiConfig.venueImageUploadUrlEndpoint(venueId),
-      data: {
-        'fileName': fileName,
-        'mimeType': contentType,
-        if (contentLength != null) 'contentLength': contentLength,
-      },
+      OwnerApiConfig.venueCoverUploadUrlEndpoint(venueId),
     );
     final payload = _asMap(response);
     final upload = VenueImageUploadRequest.fromJson(payload);
@@ -65,27 +60,30 @@ class OwnerVenuesRemoteDataSource {
     return upload;
   }
 
-  Future<String?> confirmVenueImageUpload({
+  Future<VenueImageUploadConfirmation> confirmVenueImageUploadDetailed({
     required String venueId,
     required VenueImageUploadRequest upload,
   }) async {
-    if (upload.confirmUrl == null || upload.confirmUrl!.isEmpty) {
-      return upload.resolvedImageUrl;
+    final fileKey = upload.key ?? '';
+    if (fileKey.isEmpty) {
+      throw ApiException('Missing upload key from presign response.');
     }
 
     final response = await _apiClient.post(
-      upload.confirmUrl!,
-      data: {
-        if (upload.key != null && upload.key!.isNotEmpty) 'key': upload.key,
-        if (upload.resolvedImageUrl != null)
-          'image_url': upload.resolvedImageUrl,
-        'venue_id': venueId,
-      },
+      OwnerApiConfig.mediaConfirmUploadEndpoint,
+      data: {'key': fileKey, 'assetType': 'venue_cover'},
     );
     final mapped = _asMap(response);
-    return (mapped['image_url'] as String?) ??
-        (mapped['imageUrl'] as String?) ??
-        upload.resolvedImageUrl;
+    return VenueImageUploadConfirmation.fromJson(mapped);
+  }
+
+  Future<VenueImageUploadStatus> pollVenueImageUploadStatus({
+    required String assetId,
+  }) async {
+    final response = await _apiClient.get(
+      OwnerApiConfig.mediaStatusEndpoint(assetId),
+    );
+    return VenueImageUploadStatus.fromJson(_asMap(response));
   }
 
   Map<String, dynamic> _asMap(Map<String, dynamic> response) {

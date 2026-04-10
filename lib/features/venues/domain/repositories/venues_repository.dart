@@ -33,4 +33,17 @@ abstract class VenuesRepository {
     required String venueId,
     required VenueImageUploadRequest upload,
   });
+
+  Future<VenueImageUploadConfirmation> confirmVenueImageUploadDetailed({
+    required String venueId,
+    required VenueImageUploadRequest upload,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  Future<VenueImageUploadStatus> pollVenueImageUploadStatus({
+    required String assetId,
+  }) async {
+    throw UnimplementedError();
+  }
 }
