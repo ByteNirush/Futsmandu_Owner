@@ -186,21 +186,29 @@ class VenueImageUploadRequest {
     required this.uploadUrl,
     required this.method,
     required this.headers,
+    required this.expiresIn,
     this.publicUrl,
     this.imageUrl,
     this.key,
+    this.assetId,
     this.confirmUrl,
   });
 
   final String uploadUrl;
   final String method;
   final Map<String, String> headers;
+  final int expiresIn;
   final String? publicUrl;
   final String? imageUrl;
   final String? key;
+  final String? assetId;
   final String? confirmUrl;
 
   String? get resolvedImageUrl => imageUrl ?? publicUrl;
+
+  String? get cdnUrl => publicUrl;
+
+  bool get hasAssetId => assetId != null && assetId!.trim().isNotEmpty;
 
   factory VenueImageUploadRequest.fromJson(Map<String, dynamic> json) {
     final rawHeaders = json['headers'];
@@ -220,6 +228,7 @@ class VenueImageUploadRequest {
           (json['uploadUrl'] as String?) ?? (json['upload_url'] as String?) ?? '',
       method: ((json['method'] as String?) ?? 'PUT').toUpperCase(),
       headers: parsedHeaders,
+      expiresIn: _toInt(json['expiresIn'] ?? json['expires_in']),
       publicUrl:
         (json['publicUrl'] as String?) ??
         (json['public_url'] as String?) ??
@@ -227,8 +236,84 @@ class VenueImageUploadRequest {
         (json['cdn_url'] as String?),
       imageUrl: (json['imageUrl'] as String?) ?? (json['image_url'] as String?),
       key: (json['key'] as String?) ?? (json['objectKey'] as String?),
+      assetId:
+          (json['assetId'] as String?) ??
+          (json['asset_id'] as String?) ??
+          (json['id'] as String?),
       confirmUrl:
           (json['confirmUrl'] as String?) ?? (json['confirm_url'] as String?),
     );
   }
+
+  static int _toInt(Object? raw) {
+    if (raw is int) return raw;
+    if (raw is double) return raw.toInt();
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+}
+
+class VenueImageUploadConfirmation {
+  const VenueImageUploadConfirmation({
+    required this.message,
+    this.assetId,
+    this.status,
+  });
+
+  final String message;
+  final String? assetId;
+  final String? status;
+
+  bool get hasAssetId => assetId != null && assetId!.trim().isNotEmpty;
+
+  factory VenueImageUploadConfirmation.fromJson(Map<String, dynamic> json) {
+    final assetJson = json['asset'];
+    final nestedAssetId = assetJson is Map<String, dynamic>
+        ? (assetJson['assetId'] as String?) ??
+            (assetJson['asset_id'] as String?) ??
+            (assetJson['id'] as String?)
+        : null;
+
+    return VenueImageUploadConfirmation(
+      message: (json['message'] as String?) ?? 'Upload confirmed.',
+      assetId:
+          (json['assetId'] as String?) ??
+          (json['asset_id'] as String?) ??
+          nestedAssetId,
+      status: (json['status'] as String?) ?? (json['assetStatus'] as String?),
+    );
+  }
+}
+
+class VenueImageUploadStatus {
+  const VenueImageUploadStatus({required this.status});
+
+  final String status;
+
+  bool get isReady => status.toLowerCase() == 'ready';
+  bool get isFailed => status.toLowerCase() == 'failed';
+  bool get isProcessing => status.toLowerCase() == 'processing';
+
+  factory VenueImageUploadStatus.fromJson(Map<String, dynamic> json) {
+    return VenueImageUploadStatus(
+      status: (json['status'] as String?) ?? 'processing',
+    );
+  }
+}
+
+class VenueImageUploadResult {
+  const VenueImageUploadResult({
+    required this.upload,
+    required this.confirmation,
+    required this.status,
+    this.cdnUrl,
+  });
+
+  final VenueImageUploadRequest upload;
+  final VenueImageUploadConfirmation confirmation;
+  final VenueImageUploadStatus status;
+  final String? cdnUrl;
+
+  String? get assetId => confirmation.assetId ?? upload.assetId;
+  String? get imageUrl => cdnUrl ?? upload.resolvedImageUrl;
+  bool get isReady => status.isReady;
 }
