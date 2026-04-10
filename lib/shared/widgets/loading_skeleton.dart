@@ -40,6 +40,8 @@ class _LoadingSkeletonState extends State<LoadingSkeleton>
       builder: (context, _) {
         return ListView.separated(
           padding: const EdgeInsets.all(AppSpacing.sm),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: widget.items,
           separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
           itemBuilder: (_, index) {

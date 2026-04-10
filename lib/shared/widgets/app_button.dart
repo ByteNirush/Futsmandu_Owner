@@ -44,17 +44,30 @@ class AppButton extends StatelessWidget {
               ],
             );
 
-      final textButton = SizedBox(
+      // Wrap in a Row with Expanded when expand=true to fill available width
+      // in row contexts; otherwise use IntrinsicWidth for content-based sizing.
+      if (expand) {
+        return Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: AppSpacing.buttonHeight,
+                child: TextButton(
+                  onPressed: isLoading ? null : onPressed,
+                  child: textChild,
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+      return SizedBox(
         height: AppSpacing.buttonHeight,
         child: TextButton(
           onPressed: isLoading ? null : onPressed,
           child: textChild,
         ),
       );
-      if (expand) {
-        return SizedBox(width: double.infinity, child: textButton);
-      }
-      return IntrinsicWidth(child: textButton);
     }
 
     final iconWidget = icon == null ? null : Icon(icon, size: 18);
