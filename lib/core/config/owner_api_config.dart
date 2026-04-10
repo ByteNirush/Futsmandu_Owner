@@ -15,11 +15,14 @@ class OwnerApiConfig {
   static const String staffEndpoint = '$apiPrefix/staff';
   static const String pricingEndpoint = '$apiPrefix/pricing';
   static const String analyticsEndpoint = '$apiPrefix/analytics';
+    static const String mediaEndpoint = '$apiPrefix/media';
 
   static const String healthEndpoint = '$apiPrefix/health';
 
   static const String registerEndpoint = '$authEndpoint/register';
   static const String loginEndpoint = '$authEndpoint/login';
+    static const String verifyOtpEndpoint = '$authEndpoint/verify-otp';
+    static const String resendOtpEndpoint = '$authEndpoint/resend-otp';
   static const String refreshEndpoint = '$authEndpoint/refresh';
   static const String logoutEndpoint = '$authEndpoint/logout';
   static const String uploadDocsEndpoint = '$authEndpoint/upload-docs';
@@ -43,7 +46,7 @@ class OwnerApiConfig {
       '$bookingsEndpoint/$bookingId/attendance';
 
   static String courtCalendarEndpoint(String courtId) =>
-      bookingCalendarEndpoint(courtId);
+      '$courtsEndpoint/$courtId/calendar';
 
   static String blockCourtSlotEndpoint(String courtId) =>
       '$courtsEndpoint/$courtId/blocks';
@@ -62,4 +65,19 @@ class OwnerApiConfig {
 
   static String pricingPreviewEndpoint(String courtId) =>
       '$apiPrefix/courts/$courtId/pricing/preview';
+
+  static String ownerVenueEndpoint(String venueId) => '$venuesEndpoint/$venueId';
+
+  static String ownerVenueCourtsEndpoint(String venueId) =>
+      '$venuesEndpoint/$venueId/courts';
+
+  static String ownerCourtEndpoint(String courtId) => '$courtsEndpoint/$courtId';
+
+  static String venueImageUploadUrlEndpoint(String venueId) =>
+      '$venuesEndpoint/$venueId/images/upload-url';
+
+  static const String mediaUploadUrlEndpoint = '$mediaEndpoint/upload-url';
+  static const String mediaConfirmUploadEndpoint =
+      '$mediaEndpoint/confirm-upload';
+  static const String mediaDeleteAssetEndpoint = '$mediaEndpoint/asset';
 }
