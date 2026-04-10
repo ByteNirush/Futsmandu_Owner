@@ -50,6 +50,8 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
 
   bool _isUploadingImage = false;
   double _imageUploadProgress = 0;
+  String? _imageUploadStatusMessage;
+  String? _uploadedAssetId;
   String? _selectedImagePath;
   String? _selectedImageName;
   Venue? _savedVenue;
@@ -117,6 +119,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
       _selectedImagePath = picked.path;
       _selectedImageName = picked.name;
       _imageUploadProgress = 0;
+      _imageUploadStatusMessage = null;
     });
   }
 
@@ -142,34 +145,31 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     setState(() {
       _isUploadingImage = true;
       _imageUploadProgress = 0;
+      _imageUploadStatusMessage = 'Preparing image upload...';
     });
 
     try {
-      final upload = await _imageUploadService.requestUploadUrl(
+      final result = await _imageUploadService.uploadVenueCoverImage(
         venueId: venueId,
         fileName: _selectedImageName!,
         contentType: contentType,
-        contentLength: bytes.length,
-      );
-
-      await _imageUploadService.uploadBytesWithRetry(
-        upload: upload,
         bytes: bytes,
-        maxRetries: 2,
         onProgress: (progress) {
           if (!mounted) return;
           setState(() => _imageUploadProgress = progress);
         },
-      );
-
-      final uploadedUrl = await _imageUploadService.confirmUpload(
-        venueId: venueId,
-        upload: upload,
+        onStatusMessage: (message) {
+          if (!mounted) return;
+          setState(() => _imageUploadStatusMessage = message);
+        },
+        pollUntilReady: true,
       );
 
       final currentVenue = _savedVenue;
-      if (uploadedUrl != null &&
-          uploadedUrl.trim().isNotEmpty &&
+      _uploadedAssetId = result.assetId;
+
+      final uploadedUrl = result.imageUrl;
+      if (uploadedUrl != null && uploadedUrl.trim().isNotEmpty &&
           currentVenue != null) {
         _savedVenue = Venue(
           id: currentVenue.id,
@@ -544,6 +544,26 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
             const SizedBox(height: AppSpacing.xxs),
             Text(
               'Uploading image ${(_imageUploadProgress * 100).toStringAsFixed(0)}%',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (_imageUploadStatusMessage != null) ...[
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                _imageUploadStatusMessage!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ] else if (_imageUploadStatusMessage != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _imageUploadStatusMessage!,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          if (_uploadedAssetId != null) ...[
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              'Asset ID: $_uploadedAssetId',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
