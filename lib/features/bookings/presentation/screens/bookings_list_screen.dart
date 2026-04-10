@@ -335,35 +335,10 @@ class _BookingsListScreenState extends State<BookingsListScreen>
   }
 
   Future<String?> _promptBlockReason() async {
-    final controller = TextEditingController();
-    final reason = await showDialog<String>(
+    return showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Block Slot'),
-        content: TextField(
-          controller: controller,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Reason (optional)',
-            hintText: 'Maintenance, private reservation, etc.',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop(controller.text.trim());
-            },
-            child: const Text('Block'),
-          ),
-        ],
-      ),
+      builder: (_) => const _BlockSlotReasonDialog(),
     );
-    controller.dispose();
-    return reason;
   }
 
   Future<void> _blockSlot(CourtCalendarSlot slot) async {
@@ -1081,4 +1056,52 @@ class _CourtOption {
 
   final String id;
   final String name;
+}
+
+class _BlockSlotReasonDialog extends StatefulWidget {
+  const _BlockSlotReasonDialog();
+
+  @override
+  State<_BlockSlotReasonDialog> createState() => _BlockSlotReasonDialogState();
+}
+
+class _BlockSlotReasonDialogState extends State<_BlockSlotReasonDialog> {
+  late final TextEditingController _reasonController;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Block Slot'),
+      content: TextField(
+        controller: _reasonController,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          labelText: 'Reason (optional)',
+          hintText: 'Maintenance, private reservation, etc.',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_reasonController.text.trim()),
+          child: const Text('Block'),
+        ),
+      ],
+    );
+  }
 }
