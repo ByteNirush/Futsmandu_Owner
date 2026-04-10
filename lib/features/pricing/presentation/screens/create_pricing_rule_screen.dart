@@ -67,6 +67,15 @@ class _CreatePricingRuleScreenState extends State<CreatePricingRuleScreen> {
     6: 'Sat',
   };
 
+  static const Map<String, int> _canonicalPriority = <String, int>{
+    'base': 1,
+    'offpeak': 5,
+    'weekend': 8,
+    'peak': 10,
+    'lastminute': 15,
+    'custom': 20,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -81,9 +90,15 @@ class _CreatePricingRuleScreenState extends State<CreatePricingRuleScreen> {
         ? rule!.daysOfWeek.toSet()
         : <int>{0, 1, 2, 3, 4, 5, 6};
 
-    _priceController.text = ((rule?.pricePaisa ?? 100000) / 100).toStringAsFixed(0);
-    _priorityController.text = (rule?.priority ?? 1).toString();
+    _priceController.text =
+        ((rule?.pricePaisa ?? 100000) / 100).toStringAsFixed(0);
+    _priorityController.text =
+        (rule?.priority ?? _canonicalPriority[_ruleType] ?? 1).toString();
     _hoursBeforeController.text = (rule?.hoursBefore ?? '').toString();
+
+    if (widget.rule == null) {
+      _syncPriorityForRuleType();
+    }
   }
 
   @override
@@ -151,6 +166,14 @@ class _CreatePricingRuleScreenState extends State<CreatePricingRuleScreen> {
         }
       });
     }
+  }
+
+  void _syncPriorityForRuleType() {
+    final canonical = _canonicalPriority[_ruleType];
+    if (canonical == null) {
+      return;
+    }
+    _priorityController.text = canonical.toString();
   }
 
   Future<void> _saveRule() async {
@@ -285,29 +308,37 @@ class _CreatePricingRuleScreenState extends State<CreatePricingRuleScreen> {
                       items: _ruleTypes
                           .map((type) => DropdownMenuItem(value: type, child: Text(type)))
                           .toList(growable: false),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _ruleType = value);
-                        }
-                      },
+                      onChanged: widget.rule == null
+                          ? (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _ruleType = value;
+                                  _syncPriorityForRuleType();
+                                });
+                              }
+                            }
+                          : null,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Row(
                       children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _priorityController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Priority'),
-                            validator: (value) {
-                              if (int.tryParse(value ?? '') == null) {
-                                return 'Enter a valid priority';
-                              }
-                              return null;
-                            },
+                        if (widget.rule == null) ...[
+                          Expanded(
+                            child: TextFormField(
+                              controller: _priorityController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Priority'),
+                              validator: (value) {
+                                if (int.tryParse(value ?? '') == null) {
+                                  return 'Enter a valid priority';
+                                }
+                                return null;
+                              },
+                              enabled: _ruleType == 'custom',
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
                         Expanded(
                           child: TextFormField(
                             controller: _priceController,

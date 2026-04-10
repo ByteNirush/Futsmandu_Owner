@@ -23,6 +23,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
   String? _selectedCourtId;
   bool _isLoading = true;
   bool _isRefreshing = false;
+  bool _isPreviewing = false;
   String? _errorMessage;
 
   @override
@@ -120,10 +121,14 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
       6: 'Sat',
     };
     if (days.length == 7) return 'Every day';
-    return days.map((day) => labels[day] ?? '').where((value) => value.isNotEmpty).join(', ');
+    return days
+        .map((day) => labels[day] ?? '')
+        .where((value) => value.isNotEmpty)
+        .join(', ');
   }
 
-  String _formatPrice(int? pricePaisa) => 'NPR ${((pricePaisa ?? 0) / 100).toStringAsFixed(0)}';
+  String _formatPrice(int? pricePaisa) =>
+      'NPR ${((pricePaisa ?? 0) / 100).toStringAsFixed(0)}';
 
   Future<void> _openRuleForm([OwnerPricingRule? rule]) async {
     final courtId = _selectedCourtId;
@@ -131,10 +136,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
 
     final result = await Navigator.of(context).push<OwnerPricingRule>(
       MaterialPageRoute(
-        builder: (_) => CreatePricingRuleScreen(
-          courtId: courtId,
-          rule: rule,
-        ),
+        builder: (_) => CreatePricingRuleScreen(courtId: courtId, rule: rule),
       ),
     );
 
@@ -144,6 +146,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
   }
 
   Future<void> _deleteRule(OwnerPricingRule rule) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -163,22 +166,179 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
     );
 
     if (confirmed != true) return;
-
     try {
       await _pricingApi.deletePricingRule(rule.id);
       if (!mounted) return;
       await _loadRules();
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Pricing rule deleted')),
       );
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Unable to delete the pricing rule.')),
       );
+    }
+  }
+
+  Future<void> _openPricingPreview() async {
+    final courtId = _selectedCourtId;
+    if (courtId == null || courtId.isEmpty) {
+      return;
+    }
+
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
+    final dateTextController = TextEditingController(
+      text:
+          '${selectedDate.year.toString().padLeft(4, '0')}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
+    );
+    final timeTextController = TextEditingController(
+      text: selectedTime.format(context),
+    );
+
+    Future<void> pickDate(StateSetter setModalState) async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2035),
+      );
+      if (picked == null) {
+        return;
+      }
+      selectedDate = picked;
+      setModalState(() {
+        dateTextController.text =
+            '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      });
+    }
+
+    Future<void> pickTime(StateSetter setModalState) async {
+      final picked = await showTimePicker(
+        context: context,
+        initialTime: selectedTime,
+      );
+      if (picked == null) {
+        return;
+      }
+      selectedTime = picked;
+      setModalState(() {
+        timeTextController.text = selectedTime.format(context);
+      });
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: const Text('Preview Pricing'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    readOnly: true,
+                    controller: dateTextController,
+                    decoration: const InputDecoration(
+                      labelText: 'Date (YYYY-MM-DD)',
+                    ),
+                    onTap: () => pickDate(setModalState),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextField(
+                    readOnly: true,
+                    controller: timeTextController,
+                    decoration: const InputDecoration(labelText: 'Time'),
+                    onTap: () => pickTime(setModalState),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Preview'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    dateTextController.dispose();
+    timeTextController.dispose();
+
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() => _isPreviewing = true);
+    try {
+      final time =
+          '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}';
+      final preview = await _pricingApi.previewPrice(
+        courtId: courtId,
+        date: selectedDate,
+        time: time,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Pricing Preview'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Date: ${preview.date}'),
+              const SizedBox(height: AppSpacing.xs),
+              Text('Time: ${preview.time}'),
+              const SizedBox(height: AppSpacing.xs),
+              Text('Price: ${preview.displayPrice}'),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Applied rule: ${preview.ruleType ?? 'none'}',
+              ),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to preview pricing.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPreviewing = false);
+      }
     }
   }
 
@@ -208,7 +368,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.sm),
       itemCount: _rules.length + 1,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {
         if (index == 0) {
           return Column(
@@ -242,7 +402,9 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
         final rule = _rules[index - 1];
         return AppCard(
           child: ListTile(
-            title: Text('${rule.ruleType.toUpperCase()} - ${_formatPrice(rule.pricePaisa)}'),
+            title: Text(
+              '${rule.ruleType.toUpperCase()} - ${_formatPrice(rule.pricePaisa)}',
+            ),
             subtitle: Text(
               '${_formatDays(rule.daysOfWeek)} - ${_formatTime(rule.startTime)} - ${_formatTime(rule.endTime)}',
             ),
@@ -273,6 +435,17 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
       appBar: AppBar(
         title: const Text('Pricing Rules'),
         actions: [
+          IconButton(
+            icon: _isPreviewing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.visibility_outlined),
+            onPressed: _isPreviewing ? null : _openPricingPreview,
+            tooltip: 'Preview price',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _bootstrap,

@@ -34,20 +34,34 @@ class OwnerPricingApi {
     String? dateTo,
     int? hoursBefore,
   }) async {
+    final data = <String, dynamic>{
+      'rule_type': ruleType,
+      'priority': priority,
+      'price': pricePaisa,
+      'modifier': modifier,
+    };
+    if (daysOfWeek != null) {
+      data['days_of_week'] = daysOfWeek;
+    }
+    if (startTime != null && startTime.isNotEmpty) {
+      data['start_time'] = startTime;
+    }
+    if (endTime != null && endTime.isNotEmpty) {
+      data['end_time'] = endTime;
+    }
+    if (dateFrom != null && dateFrom.isNotEmpty) {
+      data['date_from'] = dateFrom;
+    }
+    if (dateTo != null && dateTo.isNotEmpty) {
+      data['date_to'] = dateTo;
+    }
+    if (hoursBefore != null) {
+      data['hours_before'] = hoursBefore;
+    }
+
     final response = await _apiClient.post(
       OwnerApiConfig.pricingRulesEndpoint(courtId),
-      data: {
-        'rule_type': ruleType,
-        'priority': priority,
-        'price': pricePaisa,
-        'modifier': modifier,
-        if (daysOfWeek != null) 'days_of_week': daysOfWeek,
-        if (startTime != null && startTime.isNotEmpty) 'start_time': startTime,
-        if (endTime != null && endTime.isNotEmpty) 'end_time': endTime,
-        if (dateFrom != null && dateFrom.isNotEmpty) 'date_from': dateFrom,
-        if (dateTo != null && dateTo.isNotEmpty) 'date_to': dateTo,
-        if (hoursBefore != null) 'hours_before': hoursBefore,
-      },
+      data: data,
     );
 
     return OwnerPricingRule.fromJson(response);
@@ -65,19 +79,38 @@ class OwnerPricingApi {
     int? hoursBefore,
     bool? isActive,
   }) async {
+    final data = <String, dynamic>{};
+    if (pricePaisa != null) {
+      data['price'] = pricePaisa;
+    }
+    if (modifier != null) {
+      data['modifier'] = modifier;
+    }
+    if (daysOfWeek != null) {
+      data['days_of_week'] = daysOfWeek;
+    }
+    if (startTime != null && startTime.isNotEmpty) {
+      data['start_time'] = startTime;
+    }
+    if (endTime != null && endTime.isNotEmpty) {
+      data['end_time'] = endTime;
+    }
+    if (dateFrom != null && dateFrom.isNotEmpty) {
+      data['date_from'] = dateFrom;
+    }
+    if (dateTo != null && dateTo.isNotEmpty) {
+      data['date_to'] = dateTo;
+    }
+    if (hoursBefore != null) {
+      data['hours_before'] = hoursBefore;
+    }
+    if (isActive != null) {
+      data['is_active'] = isActive;
+    }
+
     final response = await _apiClient.put(
       OwnerApiConfig.pricingRuleEndpoint(ruleId),
-      data: {
-        if (pricePaisa != null) 'price': pricePaisa,
-        if (modifier != null) 'modifier': modifier,
-        if (daysOfWeek != null) 'days_of_week': daysOfWeek,
-        if (startTime != null && startTime.isNotEmpty) 'start_time': startTime,
-        if (endTime != null && endTime.isNotEmpty) 'end_time': endTime,
-        if (dateFrom != null && dateFrom.isNotEmpty) 'date_from': dateFrom,
-        if (dateTo != null && dateTo.isNotEmpty) 'date_to': dateTo,
-        if (hoursBefore != null) 'hours_before': hoursBefore,
-        if (isActive != null) 'is_active': isActive,
-      },
+      data: data,
     );
 
     return OwnerPricingRule.fromJson(response);
@@ -94,10 +127,7 @@ class OwnerPricingApi {
   }) async {
     final response = await _apiClient.get(
       OwnerApiConfig.pricingPreviewEndpoint(courtId),
-      queryParameters: {
-        'date': _toDateOnly(date),
-        'time': time,
-      },
+      queryParameters: {'date': _toDateOnly(date), 'time': time},
     );
 
     return PricingPreviewResult.fromJson(response);
@@ -148,18 +178,27 @@ class OwnerPricingRule {
     return OwnerPricingRule(
       id: (json['id'] as String?) ?? '',
       courtId: json['court_id'] as String? ?? json['courtId'] as String?,
-      ruleType: (json['rule_type'] as String?) ?? (json['ruleType'] as String?) ?? 'custom',
+      ruleType:
+          (json['rule_type'] as String?) ??
+          (json['ruleType'] as String?) ??
+          'custom',
       priority: _asInt(json['priority']),
       pricePaisa: _asInt(json['price']),
       modifier: json['modifier'] as String?,
       daysOfWeek: _asIntList(json['days_of_week'] ?? json['daysOfWeek']),
       startTime: json['start_time'] as String? ?? json['startTime'] as String?,
       endTime: json['end_time'] as String? ?? json['endTime'] as String?,
-      dateFrom: DateTime.tryParse((json['date_from'] as String?) ?? (json['dateFrom'] as String?) ?? ''),
-      dateTo: DateTime.tryParse((json['date_to'] as String?) ?? (json['dateTo'] as String?) ?? ''),
+      dateFrom: DateTime.tryParse(
+        (json['date_from'] as String?) ?? (json['dateFrom'] as String?) ?? '',
+      ),
+      dateTo: DateTime.tryParse(
+        (json['date_to'] as String?) ?? (json['dateTo'] as String?) ?? '',
+      ),
       hoursBefore: _asInt(json['hours_before'] ?? json['hoursBefore']),
       isActive: json['is_active'] as bool? ?? json['isActive'] as bool?,
-      createdAt: DateTime.tryParse((json['created_at'] as String?) ?? (json['createdAt'] as String?) ?? ''),
+      createdAt: DateTime.tryParse(
+        (json['created_at'] as String?) ?? (json['createdAt'] as String?) ?? '',
+      ),
     );
   }
 
