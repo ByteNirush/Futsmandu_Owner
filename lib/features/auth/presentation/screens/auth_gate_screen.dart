@@ -165,7 +165,10 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
             height: 64,
-            indicatorColor: Theme.of(context).colorScheme.primaryContainer,
+            indicatorColor: Theme.of(context)
+                .colorScheme
+                .primary
+                .withValues(alpha: 0.14),
             indicatorShape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -173,7 +176,7 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
             iconTheme: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return IconThemeData(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 24,
                 );
               }
@@ -191,7 +194,7 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
                   );
               if (states.contains(WidgetState.selected)) {
                 return baseStyle?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w600,
                 );
               }
