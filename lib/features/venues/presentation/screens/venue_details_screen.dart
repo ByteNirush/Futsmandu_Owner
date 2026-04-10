@@ -127,6 +127,37 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
     }
   }
 
+  Widget _imagePlaceholder(
+    BuildContext context,
+    ColorScheme colorScheme, {
+    required String label,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 180,
+      color: colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.image_not_supported_outlined,
+              color: colorScheme.onSurfaceVariant,
+              size: 28,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -176,35 +207,43 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: double.infinity,
-                        height: 180,
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.image_outlined,
-                                size: 48,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(
-                                widget.venue.imageUrl == null
-                                    ? 'No venue image yet'
-                                    : 'Venue image available',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        child: widget.venue.imageUrl != null
+                            ? Image.network(
+                                widget.venue.imageUrl!,
+                                width: double.infinity,
+                                height: 180,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 180,
+                                    color: colorScheme.surfaceContainerHighest,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        value: progress.expectedTotalBytes !=
+                                                null
+                                            ? progress.cumulativeBytesLoaded /
+                                                progress.expectedTotalBytes!
+                                            : null,
+                                      ),
                                     ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _imagePlaceholder(
+                                  context,
+                                  colorScheme,
+                                  label: 'Failed to load image',
+                                ),
+                              )
+                            : _imagePlaceholder(
+                                context,
+                                colorScheme,
+                                label: 'No venue image yet',
                               ),
-                            ],
-                          ),
-                        ),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
@@ -279,40 +318,103 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 AppCard(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Court Management Dashboard',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Chip(
-                        label: Text('${_courtsController.courts.length} total'),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isCompact = constraints.maxWidth < 360;
+
+                      if (isCompact) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Court Management Dashboard',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: AppSpacing.xs),
+                            Chip(
+                              label: Text(
+                                '${_courtsController.courts.length} total',
+                              ),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Court Management Dashboard',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Chip(
+                            label: Text(
+                              '${_courtsController.courts.length} total',
+                            ),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Courts',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    AppButton(
-                      label: 'Add Court',
-                      expand: false,
-                      icon: Icons.add,
-                      variant: AppButtonVariant.filled,
-                      onPressed: _openCreateCourt,
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 360;
+
+                    if (isCompact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Courts',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          AppButton(
+                            label: 'Add Court',
+                            expand: false,
+                            icon: Icons.add,
+                            variant: AppButtonVariant.filled,
+                            onPressed: _openCreateCourt,
+                          ),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Courts',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        AppButton(
+                          label: 'Add Court',
+                          expand: false,
+                          icon: Icons.add,
+                          variant: AppButtonVariant.filled,
+                          onPressed: _openCreateCourt,
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 ScreenStateView(
