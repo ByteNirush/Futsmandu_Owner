@@ -256,8 +256,19 @@ class _BookingsListScreenState extends State<BookingsListScreen>
     }
 
     if (status == SlotStatus.available) {
+      final action = await _showAvailableSlotActions(slot);
+      if (action == null) {
+        return;
+      }
+
+      if (action == _AvailableSlotAction.block) {
+        await _blockSlot(slot);
+        return;
+      }
+
       final courtId = _selectedCourtId;
       if (courtId == null || courtId.isEmpty) return;
+      if (!mounted) return;
       final created = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => CreateOfflineBookingScreen(
@@ -274,10 +285,197 @@ class _BookingsListScreenState extends State<BookingsListScreen>
       return;
     }
 
+    if (status == SlotStatus.blocked) {
+      await _unblockSlot(slot);
+      return;
+    }
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('This slot is already reserved.')),
     );
+  }
+
+  Future<_AvailableSlotAction?> _showAvailableSlotActions(
+    CourtCalendarSlot slot,
+  ) {
+    return showModalBottomSheet<_AvailableSlotAction>(
+      context: context,
+      builder: (bottomSheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.event_available_outlined),
+              title: const Text('Create Offline Booking'),
+              subtitle: Text(
+                '${_to12Hour(slot.startTime)} - ${_to12Hour(slot.endTime)}',
+              ),
+              onTap: () {
+                Navigator.of(
+                  bottomSheetContext,
+                ).pop(_AvailableSlotAction.book);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block_outlined),
+              title: const Text('Block Slot'),
+              subtitle: const Text('Mark this time as unavailable'),
+              onTap: () {
+                Navigator.of(
+                  bottomSheetContext,
+                ).pop(_AvailableSlotAction.block);
+              },
+            ),
+            const SizedBox(height: AppSpacing.xs),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<String?> _promptBlockReason() async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Block Slot'),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Reason (optional)',
+            hintText: 'Maintenance, private reservation, etc.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop(controller.text.trim());
+            },
+            child: const Text('Block'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return reason;
+  }
+
+  Future<void> _blockSlot(CourtCalendarSlot slot) async {
+    final courtId = _selectedCourtId;
+    if (courtId == null || courtId.isEmpty) {
+      return;
+    }
+
+    final reason = await _promptBlockReason();
+    if (!mounted || reason == null) {
+      return;
+    }
+
+    try {
+      await _bookingsApi.blockCourtSlot(
+        courtId: courtId,
+        date: _selectedDay,
+        startTime: slot.startTime,
+        reason: reason,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Slot ${_to12Hour(slot.startTime)} blocked successfully.',
+          ),
+        ),
+      );
+      await _loadCalendar();
+      await _loadBookingsList(page: 1);
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to block slot.')),
+      );
+    }
+  }
+
+  Future<void> _unblockSlot(CourtCalendarSlot slot) async {
+    final blockId = slot.bookingId;
+    if (blockId == null || blockId.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Block identifier is not available.')),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Unblock Slot?'),
+        content: Text(
+          'This will reopen ${_to12Hour(slot.startTime)} - ${_to12Hour(slot.endTime)} for booking.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Unblock'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) {
+      return;
+    }
+
+    try {
+      await _bookingsApi.unblockCourtSlot(blockId: blockId);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Slot ${_to12Hour(slot.startTime)} is now available.'),
+        ),
+      );
+      await _loadCalendar();
+      await _loadBookingsList(page: 1);
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to unblock slot.')),
+      );
+    }
   }
 
   SlotStatus _mapSlotStatus(CourtCalendarSlot slot) {
@@ -871,6 +1069,11 @@ class _BookingsListScreenState extends State<BookingsListScreen>
       ),
     );
   }
+}
+
+enum _AvailableSlotAction {
+  book,
+  block,
 }
 
 class _CourtOption {

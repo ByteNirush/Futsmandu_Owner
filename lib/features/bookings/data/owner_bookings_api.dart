@@ -12,23 +12,61 @@ class OwnerBookingsApi {
     required DateTime date,
   }) async {
     final response = await _apiClient.get(
-      OwnerApiConfig.bookingCalendarEndpoint(courtId),
+      OwnerApiConfig.courtCalendarEndpoint(courtId),
       queryParameters: {'date': _toDateOnly(date)},
     );
 
-    final slotsRaw = response['slots'];
-    final slots = slotsRaw is List
-        ? slotsRaw
-              .whereType<Map<String, dynamic>>()
-              .map(CourtCalendarSlot.fromJson)
-              .toList(growable: false)
-        : <CourtCalendarSlot>[];
+    final slots = _parseCalendarSlots(response);
 
     return CourtCalendarResponse(
       courtId: (response['courtId'] as String?) ?? courtId,
       date: (response['date'] as String?) ?? _toDateOnly(date),
       slots: slots,
     );
+  }
+
+  Future<CourtCalendarResponse> getBookingsCourtCalendar({
+    required String courtId,
+    required DateTime date,
+  }) async {
+    final response = await _apiClient.get(
+      OwnerApiConfig.bookingCalendarEndpoint(courtId),
+      queryParameters: {'date': _toDateOnly(date)},
+    );
+
+    final slots = _parseCalendarSlots(response);
+    return CourtCalendarResponse(
+      courtId: (response['courtId'] as String?) ?? courtId,
+      date: (response['date'] as String?) ?? _toDateOnly(date),
+      slots: slots,
+    );
+  }
+
+  Future<CourtBlockResult> blockCourtSlot({
+    required String courtId,
+    required DateTime date,
+    required String startTime,
+    String? reason,
+  }) async {
+    final response = await _apiClient.post(
+      OwnerApiConfig.blockCourtSlotEndpoint(courtId),
+      data: {
+        'date': _toDateOnly(date),
+        'startTime': startTime,
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
+
+    return CourtBlockResult.fromJson(response);
+  }
+
+  Future<UnblockCourtResult> unblockCourtSlot({
+    required String blockId,
+  }) async {
+    final response = await _apiClient.delete(
+      OwnerApiConfig.unblockCourtSlotEndpoint(blockId),
+    );
+    return UnblockCourtResult.fromJson(response);
   }
 
   Future<OfflineBookingResult> createOfflineBooking({
@@ -112,6 +150,18 @@ class OwnerBookingsApi {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  List<CourtCalendarSlot> _parseCalendarSlots(Map<String, dynamic> response) {
+    final raw = response['slots'] ?? response['items'];
+    if (raw is! List) {
+      return const <CourtCalendarSlot>[];
+    }
+
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(CourtCalendarSlot.fromJson)
+        .toList(growable: false);
   }
 }
 
@@ -233,6 +283,41 @@ class BookingListItem {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+}
+
+class CourtBlockResult {
+  CourtBlockResult({
+    required this.id,
+    required this.startTime,
+    required this.endTime,
+    required this.status,
+  });
+
+  final String id;
+  final String startTime;
+  final String endTime;
+  final String status;
+
+  factory CourtBlockResult.fromJson(Map<String, dynamic> json) {
+    return CourtBlockResult(
+      id: (json['id'] as String?) ?? '',
+      startTime: (json['start_time'] as String?) ?? '',
+      endTime: (json['end_time'] as String?) ?? '',
+      status: (json['status'] as String?) ?? '',
+    );
+  }
+}
+
+class UnblockCourtResult {
+  UnblockCourtResult({required this.message});
+
+  final String message;
+
+  factory UnblockCourtResult.fromJson(Map<String, dynamic> json) {
+    return UnblockCourtResult(
+      message: (json['message'] as String?) ?? 'Slot unblocked',
+    );
   }
 }
 

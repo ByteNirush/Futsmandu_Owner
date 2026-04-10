@@ -179,10 +179,33 @@ class _CreateOfflineBookingScreenState extends State<CreateOfflineBookingScreen>
     });
 
     try {
+      final calendar = await _bookingsApi.getBookingsCourtCalendar(
+        courtId: courtId,
+        date: bookingDate,
+      );
+
+      final apiStartTime = _toApiTime(startTime);
+      CourtCalendarSlot? selectedSlot;
+      for (final slot in calendar.slots) {
+        if (slot.startTime == apiStartTime) {
+          selectedSlot = slot;
+          break;
+        }
+      }
+      if (selectedSlot == null) {
+        throw ApiException('Selected slot is not within the court schedule.');
+      }
+
+      if (selectedSlot.status.toUpperCase() != 'AVAILABLE') {
+        throw ApiException(
+          'Selected slot is already ${selectedSlot.status.toLowerCase()}.',
+        );
+      }
+
       final result = await _bookingsApi.createOfflineBooking(
         courtId: courtId,
         bookingDate: bookingDate,
-        startTime: _toApiTime(startTime),
+        startTime: apiStartTime,
         bookingType: _bookingType,
         customerName: _customerNameController.text,
         customerPhone: _customerPhoneController.text,
@@ -264,7 +287,7 @@ class _CreateOfflineBookingScreenState extends State<CreateOfflineBookingScreen>
     return Scaffold(
       appBar: AppBar(title: const Text('Create Offline Booking')),
       body: ScreenStateView(
-        state: _errorMessage != null ? ScreenUiState.error : widget.state,
+        state: widget.state,
         emptyTitle: 'No offline booking form',
         emptySubtitle:
             _errorMessage ?? 'Create a walk-in booking for a selected court.',
@@ -298,8 +321,13 @@ class _CreateOfflineBookingScreenState extends State<CreateOfflineBookingScreen>
                       ),
                       keyboardType: TextInputType.phone,
                       validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
+                        final raw = value?.trim() ?? '';
+                        if (raw.isEmpty) {
                           return 'Phone number is required';
+                        }
+                        final nepaliPhone = RegExp(r'^\+?977\d{9,10}$|^\d{9,10}$');
+                        if (!nepaliPhone.hasMatch(raw)) {
+                          return 'Enter a valid Nepal phone number';
                         }
                         return null;
                       },
