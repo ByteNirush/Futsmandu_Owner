@@ -31,6 +31,35 @@ class OwnerAuthApi {
     return OwnerRegistrationResult.fromApiJson(result);
   }
 
+  Future<OtpVerificationResult> verifyOtp({
+    required String ownerId,
+    required String otp,
+  }) async {
+    final result = await _apiClient.post(
+      OwnerApiConfig.verifyOtpEndpoint,
+      requiresAuth: false,
+      data: {
+        'ownerId': ownerId.trim(),
+        'otp': otp.trim(),
+      },
+    );
+
+    return OtpVerificationResult.fromJson(result);
+  }
+
+  Future<String> resendOtp({required String ownerId}) async {
+    final result = await _apiClient.post(
+      OwnerApiConfig.resendOtpEndpoint,
+      requiresAuth: false,
+      data: {'ownerId': ownerId.trim()},
+    );
+
+    final message = result['message']?.toString();
+    return message != null && message.trim().isNotEmpty
+        ? message
+        : 'OTP sent successfully.';
+  }
+
   Future<OwnerLoginResult> login({
     required String email,
     required String password,
@@ -51,7 +80,7 @@ class OwnerAuthApi {
 
     return OwnerLoginResult(
       accessToken: accessToken,
-      owner: OwnerAuthProfile.fromLoginResponse(owner),
+      owner: Owner.fromApiJson(owner),
     );
   }
 

@@ -68,7 +68,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(result.message)));
-      Navigator.pop(context);
+      Navigator.pushReplacementNamed(
+        context,
+        '/otp-verification',
+        arguments: {
+          'flow': 'owner-auth',
+          'ownerId': result.owner.id,
+          'email': result.owner.email,
+          'phone': result.owner.phone,
+        },
+      );
     } on Exception catch (error) {
       if (!mounted) {
         return;

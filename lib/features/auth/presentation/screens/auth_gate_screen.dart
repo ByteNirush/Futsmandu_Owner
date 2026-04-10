@@ -31,32 +31,36 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
   void initState() {
     super.initState();
     widget.authController.bootstrap();
+    widget.authController.addListener(_onAuthChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.authController.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
+  void _onAuthChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.authController,
-      builder: (context, _) {
-        if (widget.authController.isInitializing) {
-          return const _BootstrapLoader();
-        }
+    if (widget.authController.isInitializing) {
+      return const _BootstrapLoader();
+    }
 
-        if (!widget.authController.isAuthenticated) {
-          return LoginScreen(authController: widget.authController);
-        }
+    if (!widget.authController.isAuthenticated) {
+      return LoginScreen(authController: widget.authController);
+    }
 
-        if (widget.authController.needsVerification) {
-          return PendingVerificationScreen(
-            authController: widget.authController,
-          );
-        }
-
-        return OwnerShellScreen(
-          authController: widget.authController,
-          themeProvider: widget.themeProvider,
-        );
-      },
+    // User is logged in - allow dashboard access regardless of KYC status
+    // KYC banner on dashboard will guide them to complete verification
+    return OwnerShellScreen(
+      authController: widget.authController,
+      themeProvider: widget.themeProvider,
     );
   }
 }
@@ -111,7 +115,10 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
   ];
 
   late final List<Widget> _tabs = [
-    DashboardScreen(quickActions: _dashboardQuickActions),
+    DashboardScreen(
+      quickActions: _dashboardQuickActions,
+      authController: widget.authController,
+    ),
     const BookingsListScreen(),
     const VenuesListScreen(),
     const PricingRulesScreen(),
@@ -148,7 +155,9 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(
-              color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5),
+              color: Theme.of(
+                context,
+              ).colorScheme.outlineVariant.withValues(alpha: 0.5),
               width: 1,
             ),
           ),
@@ -174,11 +183,12 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
               );
             }),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              final baseStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                height: 1.2,
-              );
+              final baseStyle = Theme.of(context).textTheme.labelSmall
+                  ?.copyWith(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  );
               if (states.contains(WidgetState.selected)) {
                 return baseStyle?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface,

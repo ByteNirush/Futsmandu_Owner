@@ -28,7 +28,18 @@ class OwnerAuthRepository {
     );
   }
 
-  Future<OwnerAuthProfile> login({
+  Future<OtpVerificationResult> verifyOtp({
+    required String ownerId,
+    required String otp,
+  }) async {
+    return _remoteDataSource.verifyOtp(ownerId: ownerId, otp: otp);
+  }
+
+  Future<String> resendOtp({required String ownerId}) {
+    return _remoteDataSource.resendOtp(ownerId: ownerId);
+  }
+
+  Future<Owner> login({
     required String email,
     required String password,
   }) async {
@@ -36,9 +47,12 @@ class OwnerAuthRepository {
       email: email,
       password: password,
     );
+
+    final hydratedOwner = await _hydrateOwnerWithLocalKyc(result.owner);
+
     await _sessionStore.saveAccessToken(result.accessToken);
-    await _sessionStore.saveOwner(result.owner);
-    return result.owner;
+    await _sessionStore.saveOwner(hydratedOwner);
+    return hydratedOwner;
   }
 
   Future<void> refreshAccessToken() async {
@@ -54,10 +68,18 @@ class OwnerAuthRepository {
     }
   }
 
-  Future<OwnerAuthProfile?> restoreSession() async {
-    final owner = await _sessionStore.getOwner();
+  Future<Owner?> restoreSession() async {
+    final accessToken = await _sessionStore.getAccessToken();
+    final rawOwner = await _sessionStore.getOwner();
+    final owner = rawOwner == null
+        ? null
+        : await _hydrateOwnerWithLocalKyc(rawOwner);
     if (owner == null) {
       return null;
+    }
+
+    if (accessToken != null && accessToken.isNotEmpty) {
+      return owner;
     }
 
     try {
@@ -70,4 +92,27 @@ class OwnerAuthRepository {
   }
 
   Future<void> clearSession() => _sessionStore.clearAll();
+
+  Future<Owner> _hydrateOwnerWithLocalKyc(Owner owner) async {
+    final cachedDocKeys = await _sessionStore.getKycDocKeysForOwner(owner.id);
+
+    if (owner.kycDocumentKeys.isNotEmpty) {
+      await _sessionStore.saveKycDocKeysForOwner(
+        ownerId: owner.id,
+        keys: owner.kycDocumentKeys,
+      );
+      return owner;
+    }
+
+    if (cachedDocKeys.isEmpty || owner.isKycApproved) {
+      return owner;
+    }
+
+    return owner.copyWith(
+      isKycApproved: false,
+      kycStatus: KycVerificationStatus.pending,
+      kycRejectionReason: null,
+      kycDocumentKeys: cachedDocKeys,
+    );
+  }
 }

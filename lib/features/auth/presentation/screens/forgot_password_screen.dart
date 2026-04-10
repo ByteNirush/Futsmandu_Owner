@@ -60,7 +60,10 @@ class ForgotPasswordScreen extends StatelessWidget {
                         Navigator.pushNamed(
                           context,
                           '/otp-verification',
-                          arguments: {'nextRoute': '/reset-password'},
+                          arguments: {
+                            'flow': 'password-reset',
+                            'nextRoute': '/reset-password',
+                          },
                         );
                       },
                     ),

@@ -28,7 +28,7 @@ class PendingVerificationScreen extends StatelessWidget {
                   const AppLogo(size: 84),
                   const SizedBox(height: AppSpacing.lg),
                   Text(
-                    'Pending admin verification',
+                    'Complete KYC Verification',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
@@ -36,9 +36,7 @@ class PendingVerificationScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    owner == null
-                        ? 'Your owner account is waiting for admin approval before you can access the workspace.'
-                        : '${owner.displayBusinessName} is waiting for admin approval before workspace access is granted.',
+                    'Your account is verified, but we need to complete Know Your Customer (KYC) verification to activate all features. This is a one-time process.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
@@ -50,18 +48,70 @@ class PendingVerificationScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Owner: ${owner.name}'),
+                            Text(
+                              'Account Details',
+                              style: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            Text(
+                              'Business: ${owner.displayBusinessName}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                             const SizedBox(height: 6),
-                            Text('Email: ${owner.email}'),
+                            Text(
+                              'Email: ${owner.email}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                             const SizedBox(height: 6),
-                            Text('Phone: ${owner.phone}'),
+                            Text(
+                              'Phone: ${owner.phone}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ],
                         ),
                       ),
                     ),
-                  if (owner != null) const SizedBox(height: AppSpacing.sm),
+                  if (owner != null) const SizedBox(height: AppSpacing.md),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outlined,
+                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              size: 20,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                'Required Documents:',
+                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '• Business Registration Certificate\n• Personal Citizenship Document\n• Business PAN/Tax ID',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                   AppButton(
-                    label: 'Upload documents',
+                    label: 'Upload KYC Documents',
                     onPressed: () {
                       Navigator.of(context).pushNamed('/upload-documents');
                     },

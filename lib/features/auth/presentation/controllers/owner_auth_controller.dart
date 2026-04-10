@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../../core/network/error_handler.dart';
 import '../../data/owner_auth_repository.dart';
 import '../../domain/owner_auth_models.dart';
 
 enum OwnerAuthStatus { initializing, unauthenticated, authenticated }
 
-const bool kBypassOwnerAdminVerification = true;
+const bool kBypassOwnerAdminVerification = false;
 
 class OwnerAuthController extends ChangeNotifier {
   OwnerAuthController({OwnerAuthRepository? repository})
@@ -25,10 +26,26 @@ class OwnerAuthController extends ChangeNotifier {
 
   bool get isAuthenticated => _status == OwnerAuthStatus.authenticated;
   bool get isVerified => _owner?.isVerified ?? false;
-  bool get canAccessWorkspace =>
-      isAuthenticated && (kBypassOwnerAdminVerification || isVerified);
+  bool get isKycApproved => _owner?.isKycApproved ?? false;
+    KycVerificationStatus get kycStatus =>
+      _owner?.kycStatus ?? KycVerificationStatus.pending;
+    String? get kycRejectionReason => _owner?.kycRejectionReason;
+    bool get hasUploadedAnyKycDocument =>
+      _owner?.hasUploadedAnyKycDocument ?? false;
+    bool get hasUploadedAllKycDocuments =>
+      _owner?.hasUploadedAllKycDocuments ?? false;
+  
+  /// Can access the dashboard and basic features
+  bool get canAccessWorkspace => isAuthenticated;
+  
+  /// Indicates KYC is still pending admin review
+  bool get needsKycVerification =>
+      isAuthenticated && !kBypassOwnerAdminVerification && !isKycApproved;
+  
+  /// For backward compatibility - email verification status
   bool get needsVerification =>
       isAuthenticated && !kBypassOwnerAdminVerification && !isVerified;
+  
   bool get isInitializing => _status == OwnerAuthStatus.initializing;
 
   Future<void> bootstrap() async {
@@ -45,7 +62,7 @@ class OwnerAuthController extends ChangeNotifier {
       _setStatus(OwnerAuthStatus.authenticated);
     } catch (error) {
       _owner = null;
-      _errorMessage = _readableError(error);
+      _errorMessage = ErrorHandler.messageFor(error);
       _setStatus(OwnerAuthStatus.unauthenticated);
     }
   }
@@ -69,7 +86,38 @@ class OwnerAuthController extends ChangeNotifier {
       _clearError();
       return result;
     } catch (error) {
-      _errorMessage = _readableError(error);
+      _errorMessage = ErrorHandler.messageFor(error);
+      rethrow;
+    } finally {
+      _endBusy();
+    }
+  }
+
+  Future<OtpVerificationResult> verifyOtp({
+    required String ownerId,
+    required String otp,
+  }) async {
+    _startBusy();
+    try {
+      final response = await _repository.verifyOtp(ownerId: ownerId, otp: otp);
+      _clearError();
+      return response;
+    } catch (error) {
+      _errorMessage = ErrorHandler.messageFor(error);
+      rethrow;
+    } finally {
+      _endBusy();
+    }
+  }
+
+  Future<String> resendOtp({required String ownerId}) async {
+    _startBusy();
+    try {
+      final message = await _repository.resendOtp(ownerId: ownerId);
+      _clearError();
+      return message;
+    } catch (error) {
+      _errorMessage = ErrorHandler.messageFor(error);
       rethrow;
     } finally {
       _endBusy();
@@ -84,7 +132,7 @@ class OwnerAuthController extends ChangeNotifier {
       _setStatus(OwnerAuthStatus.authenticated);
     } catch (error) {
       _owner = null;
-      _errorMessage = _readableError(error);
+      _errorMessage = ErrorHandler.messageFor(error);
       _setStatus(OwnerAuthStatus.unauthenticated);
       rethrow;
     } finally {
@@ -97,7 +145,7 @@ class OwnerAuthController extends ChangeNotifier {
     try {
       await _repository.logout();
     } catch (error) {
-      _errorMessage = _readableError(error);
+      _errorMessage = ErrorHandler.messageFor(error);
       await _repository.clearSession();
     } finally {
       _owner = null;
@@ -114,7 +162,7 @@ class OwnerAuthController extends ChangeNotifier {
       }
     } catch (error) {
       _owner = null;
-      _errorMessage = _readableError(error);
+      _errorMessage = ErrorHandler.messageFor(error);
       await _repository.clearSession();
       _setStatus(OwnerAuthStatus.unauthenticated);
       rethrow;
@@ -151,12 +199,5 @@ class OwnerAuthController extends ChangeNotifier {
   void _clearError() {
     if (_errorMessage == null) return;
     _errorMessage = null;
-  }
-
-  String _readableError(Object error) {
-    if (error is Exception) {
-      return error.toString().replaceFirst('Exception: ', '');
-    }
-    return error.toString();
   }
 }
