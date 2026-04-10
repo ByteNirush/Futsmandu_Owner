@@ -4,205 +4,417 @@ import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../courts/presentation/screens/create_court_screen.dart';
+import '../../domain/models/court_models.dart';
+import '../../domain/models/venue_models.dart';
+import '../controllers/venue_courts_controller.dart';
+import 'create_venue_screen.dart';
 
-class VenueDetailsScreen extends StatelessWidget {
-  const VenueDetailsScreen({super.key});
+class VenueDetailsScreen extends StatefulWidget {
+  const VenueDetailsScreen({super.key, required this.venue});
+
+  final Venue venue;
+
+  @override
+  State<VenueDetailsScreen> createState() => _VenueDetailsScreenState();
+}
+
+class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
+  final VenueCourtsController _courtsController = VenueCourtsController();
+
+  @override
+  void initState() {
+    super.initState();
+    _courtsController.loadCourts(widget.venue.id);
+  }
+
+  @override
+  void dispose() {
+    _courtsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openCreateCourt() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CreateCourtScreen(venueId: widget.venue.id),
+      ),
+    );
+    if (changed == true && mounted) {
+      await _courtsController.loadCourts(widget.venue.id);
+    }
+  }
+
+  Future<void> _openEditVenue() async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            CreateVenueScreen(isEditMode: true, initialVenue: widget.venue),
+      ),
+    );
+    if (changed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _openEditCourt(Court court) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            CreateCourtScreen(venueId: widget.venue.id, initialCourt: court),
+      ),
+    );
+    if (changed == true && mounted) {
+      await _courtsController.loadCourts(widget.venue.id);
+    }
+  }
+
+  Future<void> _deleteCourt(Court court) async {
+    if (!_courtsController.canDeleteCourt) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Only OWNER_ADMIN can delete courts.')),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete court?'),
+        content: Text(
+          'This will soft delete ${court.name}. Existing bookings remain unaffected.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) {
+      return;
+    }
+
+    try {
+      await _courtsController.deleteCourt(
+        venueId: widget.venue.id,
+        courtId: court.id,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('${court.name} deleted.')));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _courtsController.errorMessage ?? 'Failed to delete court.',
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Venue Details'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share_outlined),
-            onPressed: () {
-              // Share venue
-            },
+    return AnimatedBuilder(
+      animation: _courtsController,
+      builder: (context, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.venue.name),
+            actions: [
+              IconButton(
+                onPressed: _openEditVenue,
+                icon: const Icon(Icons.edit_outlined),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        children: [
-          // Venue Image Placeholder
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Stack(
+          body: RefreshIndicator(
+            onRefresh: () => _courtsController.loadCourts(widget.venue.id),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppSpacing.sm),
               children: [
-                Center(
+                if (!widget.venue.isVerified) ...[
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: colorScheme.tertiaryContainer,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.verified_outlined),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            'Pending Verification: this venue is awaiting admin approval.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+                AppCard(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.add_photo_alternate_outlined,
-                        size: 48,
-                        color: colorScheme.onSurfaceVariant,
+                      Container(
+                        width: double.infinity,
+                        height: 180,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_outlined,
+                                size: 48,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                widget.venue.imageUrl == null
+                                    ? 'No venue image yet'
+                                    : 'Venue image available',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.xs),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Add Venue Image',
+                        widget.venue.name,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        widget.venue.description,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: AppSpacing.xxs),
+                          Expanded(
+                            child: Text(
+                              widget.venue.displayAddress,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Lat ${widget.venue.latitude}, Lng ${widget.venue.longitude}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          Chip(
+                            label: Text(
+                              widget.venue.isVerified
+                                  ? 'Verified'
+                                  : 'Pending Verification',
+                            ),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          Chip(
+                            label: Text(
+                              widget.venue.isActive ? 'Active' : 'Inactive',
+                            ),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ],
+                      ),
+                      if (widget.venue.amenities.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Wrap(
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
+                          children: widget.venue.amenities
+                              .map((amenity) => Chip(label: Text(amenity)))
+                              .toList(growable: false),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                Positioned(
-                  top: AppSpacing.sm,
-                  right: AppSpacing.sm,
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      // Upload image
-                    },
-                    icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                    label: const Text('Upload'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colorScheme.surface,
-                      foregroundColor: colorScheme.onSurface,
+                const SizedBox(height: AppSpacing.md),
+                AppCard(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Court Management Dashboard',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Chip(
+                        label: Text('${_courtsController.courts.length} total'),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Courts',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
+                    AppButton(
+                      label: 'Add Court',
+                      expand: false,
+                      icon: Icons.add,
+                      variant: AppButtonVariant.filled,
+                      onPressed: _openCreateCourt,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ScreenStateView(
+                  state: _courtsController.state,
+                  emptyTitle: 'No courts yet',
+                  emptySubtitle: _courtsController.state == ScreenUiState.error
+                      ? (_courtsController.errorMessage ??
+                            'Unable to load courts.')
+                      : 'Add the first court for this venue.',
+                  onRetry: () => _courtsController.loadCourts(widget.venue.id),
+                  content: Column(
+                    children: [
+                      for (final court in _courtsController.courts) ...[
+                        _CourtCard(
+                          court: court,
+                          onEdit: () => _openEditCourt(court),
+                          onDelete: _courtsController.canDeleteCourt
+                              ? () => _deleteCourt(court)
+                              : null,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-
-          // Venue Info
-          Text(
-            'Futsmandu Arena',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xxs),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: AppSpacing.xxs),
-              Text(
-                'Baneshwor, Kathmandu',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // Stats Row
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: AppSpacing.sm,
-              children: [
-                _buildStatCard(context, 'Courts', '3', Icons.sports_soccer),
-                _buildStatCard(context, 'Capacity', '36', Icons.people_outline),
-                _buildStatCard(context, 'Rating', '4.8', Icons.star_outline),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // Courts Section
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Courts',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              AppButton(
-                label: 'Add Court',
-                expand: false,
-                icon: Icons.add,
-                variant: AppButtonVariant.filled,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CreateCourtScreen()),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          AppCard(
-            child: ListTile(
-              leading: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: const Icon(
-                  Icons.sports_soccer,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              title: Text(
-                'Court A',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                'Artificial Turf • Capacity 12',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              trailing: AppButton(
-                label: 'Edit',
-                expand: false,
-                icon: Icons.edit,
-                variant: AppButtonVariant.outlined,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CreateCourtScreen(isEditMode: true),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildStatCard(BuildContext context, String label, String value, IconData icon) {
+class _CourtCard extends StatelessWidget {
+  const _CourtCard({
+    required this.court,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final Court court;
+  final VoidCallback onEdit;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Expanded(
-      child: AppCard(
+    return AppCard(
+      child: Padding(
         padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            Icon(icon, color: colorScheme.primary, size: 24),
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const Icon(Icons.sports_soccer, color: Colors.white),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    court.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    '${court.courtType} • ${court.surface}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    'Capacity ${court.capacity} • ${court.openTime} - ${court.closeTime} • ${court.isActive ? 'Active' : 'Inactive'}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+            Column(
+              children: [
+                IconButton(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                if (onDelete != null)
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: Icon(Icons.delete_outline, color: colorScheme.error),
+                  ),
+              ],
             ),
           ],
         ),

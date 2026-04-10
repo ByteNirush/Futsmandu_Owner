@@ -5,6 +5,8 @@ import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../staff/presentation/screens/add_staff_screen.dart';
+import '../../../staff/presentation/screens/staff_list_screen.dart';
+import '../../../auth/domain/owner_auth_models.dart';
 import '../../../auth/presentation/screens/upload_documents_screen.dart';
 import '../../../auth/presentation/controllers/owner_auth_controller.dart';
 
@@ -24,7 +26,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
-  bool _kycUpdated = false;
 
   static String _themeModeLabel(ThemeMode mode) {
     switch (mode) {
@@ -67,10 +68,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     phone: owner.phone,
                     isVerified: owner.isVerified,
                     colorScheme: colorScheme,
-                    kycStatusLabel: owner.isVerified
-                        ? (_kycUpdated ? 'KYC Updated' : 'Verified')
-                        : 'Pending verification',
+                    kycStatusLabel: owner.kycStatusLabel,
                     onUpdateKyc: () => _openKycUpdate(context),
+                  ),
+                const SizedBox(height: AppSpacing.md),
+                if (owner != null)
+                  _KycStatusSection(
+                    status: owner.kycStatus,
+                    rejectionReason: owner.kycRejectionReason,
+                    hasUploadedAnyKycDocument: owner.hasUploadedAnyKycDocument,
+                    hasUploadedAllKycDocuments: owner.hasUploadedAllKycDocuments,
+                    businessName: owner.displayBusinessName,
+                    onUpdateKyc: () => _openKycUpdate(context),
+                    colorScheme: colorScheme,
                   ),
                 const SizedBox(height: AppSpacing.md),
                 _SectionHeader(
@@ -90,6 +100,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       childAspectRatio: compact ? 3.6 : 1.55,
                       children: [
                         _QuickActionCard(
+                          icon: Icons.group_outlined,
+                          title: 'Manage Staff',
+                          subtitle: 'View, update roles, and deactivate',
+                          accentColor: colorScheme.secondary,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const StaffListScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _QuickActionCard(
                           icon: Icons.person_add_alt_1_rounded,
                           title: 'Add Staff',
                           subtitle: 'Invite a new staff member',
@@ -103,24 +126,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                         ),
                         _QuickActionCard(
-                          icon: Icons.analytics_outlined,
-                          title: 'Add Analyst',
-                          subtitle: 'Create an analytics access role',
+                          icon: Icons.supervisor_account_outlined,
+                          title: 'Add Admin',
+                          subtitle: 'Invite owner admin account',
                           accentColor: colorScheme.tertiary,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => const AddStaffScreen(
-                                  title: 'Add Analyst',
-                                  nameLabel: 'Analyst name',
-                                  nameHint: 'Enter analyst full name',
+                                  title: 'Add Owner Admin',
+                                  nameLabel: 'Admin name',
+                                  nameHint: 'Enter admin full name',
                                   phoneLabel: 'Phone number',
                                   phoneHint: 'Enter phone number',
-                                  roleLabel: 'Access level',
-                                  primaryActionLabel: 'Save Analyst',
-                                  submittingLabel: 'Saving...',
-                                  roles: ['Owner Analyst', 'Owner Admin'],
-                                  initialRole: 'Owner Analyst',
+                                  roleLabel: 'Role',
+                                  primaryActionLabel: 'Invite Admin',
+                                  submittingLabel: 'Inviting...',
+                                  roles: ['OWNER_ADMIN'],
+                                  initialRole: 'OWNER_ADMIN',
                                 ),
                               ),
                             );
@@ -220,19 +243,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _openKycUpdate(BuildContext context) {
-    Navigator.of(context)
-        .push<bool>(
-          MaterialPageRoute(
-            builder: (_) => UploadDocumentsScreen(
-              onSubmitted: () => Navigator.of(context).pop(true),
-            ),
-          ),
-        )
-        .then((submitted) {
-          if (!mounted || submitted != true) return;
-          setState(() => _kycUpdated = true);
-        });
+  Future<void> _openKycUpdate(BuildContext context) async {
+    final didSubmit = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => UploadDocumentsScreen(
+          onSubmitted: () => Navigator.of(context).pop(true),
+        ),
+      ),
+    );
+
+    if (didSubmit == true) {
+      await widget.authController.bootstrap();
+    }
   }
 
   void _showSupportSheet(BuildContext context) {
@@ -700,3 +722,208 @@ class _StatusChip extends StatelessWidget {
     );
   }
 }
+
+class _KycStatusSection extends StatelessWidget {
+  const _KycStatusSection({
+    required this.status,
+    required this.rejectionReason,
+    required this.hasUploadedAnyKycDocument,
+    required this.hasUploadedAllKycDocuments,
+    required this.businessName,
+    required this.onUpdateKyc,
+    required this.colorScheme,
+  });
+
+  final KycVerificationStatus status;
+  final String? rejectionReason;
+  final bool hasUploadedAnyKycDocument;
+  final bool hasUploadedAllKycDocuments;
+  final String businessName;
+  final VoidCallback onUpdateKyc;
+  final ColorScheme colorScheme;
+
+  bool get _isApproved => status == KycVerificationStatus.approved;
+  bool get _isRejected => status == KycVerificationStatus.rejected;
+
+  String get _statusMessage {
+    if (_isApproved) {
+      return 'Your KYC is approved. You have full access.';
+    }
+    if (_isRejected) {
+      if (rejectionReason != null && rejectionReason!.trim().isNotEmpty) {
+        return 'Your KYC was rejected. ${rejectionReason!.trim()}';
+      }
+      return 'Your KYC was rejected. Please update your documents and resubmit.';
+    }
+    if (hasUploadedAllKycDocuments) {
+      return 'Your documents are submitted and under admin review.';
+    }
+    if (hasUploadedAnyKycDocument) {
+      return 'Some documents are uploaded. Upload the remaining documents to continue.';
+    }
+    return 'Upload documents to complete verification.';
+  }
+
+  String get _statusDetail {
+    if (_isApproved) {
+      return 'All required documents verified';
+    }
+    if (_isRejected) {
+      return 'Action required: upload corrected documents for review';
+    }
+    if (hasUploadedAllKycDocuments) {
+      return 'Submitted: waiting for admin approval';
+    }
+    return 'Please upload: Business Registration, Citizenship, Business PAN';
+  }
+
+  String get _ctaLabel {
+    if (_isApproved) {
+      return 'Update KYC';
+    }
+    if (_isRejected) {
+      return 'Re-upload Documents';
+    }
+    if (hasUploadedAnyKycDocument) {
+      return 'Continue Upload';
+    }
+    return 'Upload Documents';
+  }
+
+  IconData get _statusIcon {
+    if (_isApproved) {
+      return Icons.verified_user_rounded;
+    }
+    if (_isRejected) {
+      return Icons.cancel_rounded;
+    }
+    return Icons.assignment_outlined;
+  }
+
+  Color get _statusIconColor {
+    if (_isApproved) {
+      return colorScheme.tertiary;
+    }
+    if (_isRejected) {
+      return colorScheme.error;
+    }
+    return colorScheme.warning;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _statusIcon,
+                color: _statusIconColor,
+                size: 28,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'KYC Verification Status',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      _statusMessage,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: _isApproved
+                  ? colorScheme.tertiaryContainer
+                  : _isRejected
+                  ? colorScheme.errorContainer
+                  : colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _isApproved
+                      ? Icons.check_circle
+                      : _isRejected
+                      ? Icons.error_rounded
+                      : Icons.hourglass_top_rounded,
+                  color: _isApproved
+                      ? colorScheme.onTertiaryContainer
+                      : _isRejected
+                      ? colorScheme.onErrorContainer
+                      : colorScheme.onPrimaryContainer,
+                  size: 20,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    _statusDetail,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: _isApproved
+                          ? colorScheme.onTertiaryContainer
+                          : _isRejected
+                          ? colorScheme.onErrorContainer
+                          : colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onUpdateKyc,
+              icon: Icon(
+                _isApproved
+                    ? Icons.edit_document
+                    : _isRejected
+                    ? Icons.refresh_rounded
+                    : Icons.cloud_upload_rounded,
+              ),
+              label: Text(_ctaLabel),
+              style: FilledButton.styleFrom(
+                backgroundColor: _isApproved
+                    ? colorScheme.tertiary
+                    : _isRejected
+                    ? colorScheme.error
+                    : colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+extension _ColorSchemeExt on ColorScheme {
+  Color get warning => Color.lerp(
+    primary,
+    Color.lerp(Colors.orange, Colors.red, 0.3) ?? Colors.orange,
+    0.5,
+  ) ??
+      Colors.orange;
+}
+

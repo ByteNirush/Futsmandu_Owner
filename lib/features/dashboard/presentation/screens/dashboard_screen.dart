@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
+import '../../../auth/domain/owner_auth_models.dart';
+import '../../../auth/presentation/controllers/owner_auth_controller.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/summary_card.dart';
@@ -25,10 +28,12 @@ class DashboardScreen extends StatelessWidget {
     super.key,
     this.state = ScreenUiState.content,
     this.quickActions = _defaultQuickActions,
+    this.authController,
   });
 
   final ScreenUiState state;
   final List<DashboardQuickAction> quickActions;
+  final OwnerAuthController? authController;
 
   static const _defaultQuickActions = <DashboardQuickAction>[];
 
@@ -97,6 +102,18 @@ class DashboardScreen extends StatelessWidget {
             children: [
               const DashboardHeader(),
               const SizedBox(height: AppSpacing.md),
+              if (authController != null && authController!.kycStatus != KycVerificationStatus.approved)
+                _KycStatusBanner(
+                  status: authController!.kycStatus,
+                  rejectionReason: authController!.kycRejectionReason,
+                  hasUploadedAnyKycDocument:
+                      authController!.hasUploadedAnyKycDocument,
+                  onTap: () {
+                    Navigator.of(context).pushNamed('/upload-documents');
+                  },
+                ),
+              if (authController != null && authController!.kycStatus != KycVerificationStatus.approved)
+                const SizedBox(height: AppSpacing.md),
               const _DashboardSectionHeader(title: 'Today\'s Overview'),
               const SizedBox(height: AppSpacing.sm),
               SummaryCard(
@@ -171,6 +188,114 @@ class DashboardScreen extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _KycStatusBanner extends StatelessWidget {
+  const _KycStatusBanner({
+    required this.status,
+    required this.rejectionReason,
+    required this.hasUploadedAnyKycDocument,
+    required this.onTap,
+  });
+
+  final KycVerificationStatus status;
+  final String? rejectionReason;
+  final bool hasUploadedAnyKycDocument;
+  final VoidCallback onTap;
+
+  bool get _isRejected => status == KycVerificationStatus.rejected;
+
+  String get _title {
+    if (_isRejected) {
+      return 'KYC Rejected';
+    }
+    if (hasUploadedAnyKycDocument) {
+      return 'KYC Under Review';
+    }
+    return 'Complete KYC Verification';
+  }
+
+  String get _subtitle {
+    if (_isRejected) {
+      if (rejectionReason != null && rejectionReason!.trim().isNotEmpty) {
+        return 'Reason: ${rejectionReason!.trim()}';
+      }
+      return 'Your documents were not approved. Please update and resubmit.';
+    }
+    if (hasUploadedAnyKycDocument) {
+      return 'Documents submitted. We will notify you once review is complete.';
+    }
+    return 'Upload required documents to unlock all features';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final containerColor = _isRejected
+        ? colorScheme.errorContainer
+        : colorScheme.primaryContainer;
+    final onContainerColor = _isRejected
+        ? colorScheme.onErrorContainer
+        : colorScheme.onPrimaryContainer;
+
+    return AppCard(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              containerColor,
+              containerColor.withValues(alpha: 0.72),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _isRejected ? Icons.error_rounded : Icons.hourglass_top_rounded,
+                  color: onContainerColor,
+                  size: 28,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: onContainerColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: onContainerColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: onContainerColor,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
