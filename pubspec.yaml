@@ -27,6 +27,8 @@ dependencies:
   dio: ^5.9.0
   cookie_jar: ^4.0.8
   dio_cookie_manager: ^3.3.0
+  image_picker: ^1.2.0
+  flutter_riverpod: ^2.6.1
 
 dev_dependencies:
   flutter_test:
