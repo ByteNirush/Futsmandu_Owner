@@ -76,8 +76,16 @@ class OwnerApiConfig {
   static String venueImageUploadUrlEndpoint(String venueId) =>
       '$venuesEndpoint/$venueId/images/upload-url';
 
+  static String venueImageConfirmEndpoint(String venueId) =>
+      '$venuesEndpoint/$venueId/images/confirm';
+
+  static String venueCoverUploadUrlEndpoint(String venueId) =>
+      '$mediaEndpoint/venues/$venueId/images/cover/upload-url';
+
   static const String mediaUploadUrlEndpoint = '$mediaEndpoint/upload-url';
   static const String mediaConfirmUploadEndpoint =
       '$mediaEndpoint/confirm-upload';
+  static String mediaStatusEndpoint(String assetId) =>
+      '$mediaEndpoint/status/$assetId';
   static const String mediaDeleteAssetEndpoint = '$mediaEndpoint/asset';
 }
