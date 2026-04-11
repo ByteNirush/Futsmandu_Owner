@@ -2,12 +2,17 @@
 class OwnerApiConfig {
   OwnerApiConfig._();
 
+  // ---------------------------------------------------------------------------
+  // BASE
+  // ---------------------------------------------------------------------------
+
   static const String baseUrl = String.fromEnvironment(
     'OWNER_API_BASE_URL',
-    defaultValue: 'http://localhost:3002',
+    defaultValue: 'https://aloof-word-tuition.ngrok-free.dev',
   );
 
   static const String apiPrefix = '/api/v1/owner';
+
   static const String authEndpoint = '$apiPrefix/auth';
   static const String bookingsEndpoint = '$apiPrefix/bookings';
   static const String courtsEndpoint = '$apiPrefix/courts';
@@ -15,17 +20,24 @@ class OwnerApiConfig {
   static const String staffEndpoint = '$apiPrefix/staff';
   static const String pricingEndpoint = '$apiPrefix/pricing';
   static const String analyticsEndpoint = '$apiPrefix/analytics';
-    static const String mediaEndpoint = '$apiPrefix/media';
+  static const String mediaEndpoint = '$apiPrefix/media';
 
   static const String healthEndpoint = '$apiPrefix/health';
 
+  // ---------------------------------------------------------------------------
+  // AUTH
+  // ---------------------------------------------------------------------------
+
   static const String registerEndpoint = '$authEndpoint/register';
   static const String loginEndpoint = '$authEndpoint/login';
-    static const String verifyOtpEndpoint = '$authEndpoint/verify-otp';
-    static const String resendOtpEndpoint = '$authEndpoint/resend-otp';
+  static const String verifyOtpEndpoint = '$authEndpoint/verify-otp';
+  static const String resendOtpEndpoint = '$authEndpoint/resend-otp';
   static const String refreshEndpoint = '$authEndpoint/refresh';
   static const String logoutEndpoint = '$authEndpoint/logout';
-  static const String uploadDocsEndpoint = '$authEndpoint/upload-docs';
+
+  // ---------------------------------------------------------------------------
+  // BOOKINGS
+  // ---------------------------------------------------------------------------
 
   static const String listBookingsEndpoint = bookingsEndpoint;
   static const String createOfflineBookingEndpoint =
@@ -40,10 +52,12 @@ class OwnerApiConfig {
   static String bookingCalendarEndpoint(String courtId) =>
       '$bookingsEndpoint/courts/$courtId/calendar';
 
-  static String offlineBookingEndpoint() => '$bookingsEndpoint/offline';
+  // ❌ REMOVED DUPLICATE FUNCTION (was redundant)
+  // static String bookingAttendanceEndpoint ...
 
-  static String bookingAttendanceEndpoint(String bookingId) =>
-      '$bookingsEndpoint/$bookingId/attendance';
+  // ---------------------------------------------------------------------------
+  // COURTS
+  // ---------------------------------------------------------------------------
 
   static String courtCalendarEndpoint(String courtId) =>
       '$courtsEndpoint/$courtId/calendar';
@@ -54,38 +68,72 @@ class OwnerApiConfig {
   static String unblockCourtSlotEndpoint(String blockId) =>
       '$courtsEndpoint/blocks/$blockId';
 
-  static String courtBookingCalendarEndpoint(String courtId) =>
-      bookingCalendarEndpoint(courtId);
+
+  // ---------------------------------------------------------------------------
+  // PRICING
+  // ---------------------------------------------------------------------------
 
   static String pricingRulesEndpoint(String courtId) =>
-      '$apiPrefix/courts/$courtId/pricing';
+      '$courtsEndpoint/$courtId/pricing';
 
   static String pricingRuleEndpoint(String ruleId) =>
       '$pricingEndpoint/$ruleId';
 
   static String pricingPreviewEndpoint(String courtId) =>
-      '$apiPrefix/courts/$courtId/pricing/preview';
+      '$courtsEndpoint/$courtId/pricing/preview';
 
-  static String ownerVenueEndpoint(String venueId) => '$venuesEndpoint/$venueId';
+  // ---------------------------------------------------------------------------
+  // VENUES
+  // ---------------------------------------------------------------------------
 
-  static String ownerVenueCourtsEndpoint(String venueId) =>
+  static String venueEndpoint(String venueId) =>
+      '$venuesEndpoint/$venueId';
+
+  static String venueCourtsEndpoint(String venueId) =>
       '$venuesEndpoint/$venueId/courts';
 
-  static String ownerCourtEndpoint(String courtId) => '$courtsEndpoint/$courtId';
+  static String courtEndpoint(String courtId) =>
+      '$courtsEndpoint/$courtId';
 
-  static String venueImageUploadUrlEndpoint(String venueId) =>
-      '$venuesEndpoint/$venueId/images/upload-url';
+  static String venueGalleryEndpoint(String venueId) =>
+      '$venuesEndpoint/$venueId/gallery';
 
-  static String venueImageConfirmEndpoint(String venueId) =>
-      '$venuesEndpoint/$venueId/images/confirm';
+  // ---------------------------------------------------------------------------
+  // MEDIA - STEP 1 (UPLOAD URLS)
+  // ---------------------------------------------------------------------------
+
+  static const String mediaKycUploadUrlEndpoint =
+      '$mediaEndpoint/kyc/upload-url';
+
+  static const String mediaAvatarUploadUrlEndpoint =
+      '$mediaEndpoint/profile/avatar/upload-url';
 
   static String venueCoverUploadUrlEndpoint(String venueId) =>
-      '$mediaEndpoint/venues/$venueId/images/cover/upload-url';
+      '$mediaEndpoint/venues/$venueId/cover/upload-url';
 
-  static const String mediaUploadUrlEndpoint = '$mediaEndpoint/upload-url';
+  static String venueGalleryUploadUrlEndpoint(String venueId) =>
+      '$mediaEndpoint/venues/$venueId/gallery/upload-url';
+
+  static String venueVerificationUploadUrlEndpoint(String venueId) =>
+      '$mediaEndpoint/venues/$venueId/verification/upload-url';
+
+  // ---------------------------------------------------------------------------
+  // MEDIA - STEP 2 (CONFIRM + STATUS)
+  // ---------------------------------------------------------------------------
+
   static const String mediaConfirmUploadEndpoint =
       '$mediaEndpoint/confirm-upload';
+
   static String mediaStatusEndpoint(String assetId) =>
       '$mediaEndpoint/status/$assetId';
-  static const String mediaDeleteAssetEndpoint = '$mediaEndpoint/asset';
+
+  // ---------------------------------------------------------------------------
+  // MEDIA - PRIVATE ACCESS
+  // ---------------------------------------------------------------------------
+
+  static const String mediaDownloadUrlEndpoint =
+      '$mediaEndpoint/download-url';
+
+  static String mediaDeleteAssetEndpoint(String assetId) =>
+      '$mediaEndpoint/asset?assetId=$assetId';
 }
