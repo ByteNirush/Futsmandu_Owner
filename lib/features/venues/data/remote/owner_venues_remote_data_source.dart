@@ -27,7 +27,7 @@ class OwnerVenuesRemoteDataSource {
     required VenueUpsertRequest request,
   }) async {
     final response = await _apiClient.put(
-      OwnerApiConfig.ownerVenueEndpoint(venueId),
+      OwnerApiConfig.venueEndpoint(venueId),
       data: request.toUpdateJson(),
     );
     return Venue.fromJson(_asMap(response));

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/safe_network_image.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../domain/models/venue_models.dart';
 import '../controllers/venues_list_controller.dart';
@@ -124,19 +125,28 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.md,
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer,
                               ),
-                            ),
-                            child: const Icon(
-                              Icons.sports_soccer,
-                              color: Colors.white,
-                              size: 28,
+                              child: venue.imageUrl != null
+                                  ? SafeNetworkImage(
+                                      url: venue.imageUrl!,
+                                      width: 56,
+                                      height: 56,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Center(
+                                      child: Icon(
+                                        Icons.sports_soccer,
+                                        color: colorScheme.onPrimary,
+                                        size: 28,
+                                      ),
+                                    ),
                             ),
                           ),
                           const SizedBox(width: AppSpacing.xs),

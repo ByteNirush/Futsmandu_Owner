@@ -11,7 +11,7 @@ class OwnerCourtsRemoteDataSource {
 
   Future<List<Court>> listCourts(String venueId) async {
     final response = await _apiClient.get(
-      OwnerApiConfig.ownerVenueCourtsEndpoint(venueId),
+      OwnerApiConfig.venueCourtsEndpoint(venueId),
     );
     final rawItems =
         response['items'] ?? response['courts'] ?? response['data'];
@@ -34,7 +34,7 @@ class OwnerCourtsRemoteDataSource {
     required CourtUpsertRequest request,
   }) async {
     final response = await _apiClient.post(
-      OwnerApiConfig.ownerVenueCourtsEndpoint(venueId),
+      OwnerApiConfig.venueCourtsEndpoint(venueId),
       data: request.toJson(),
     );
     final mapped = _asMap(response);
@@ -50,14 +50,14 @@ class OwnerCourtsRemoteDataSource {
     required CourtUpsertRequest request,
   }) async {
     final response = await _apiClient.put(
-      OwnerApiConfig.ownerCourtEndpoint(courtId),
+      OwnerApiConfig.courtEndpoint(courtId),
       data: request.toUpdateJson(),
     );
     return Court.fromJson(_asMap(response));
   }
 
   Future<void> deleteCourt({required String courtId}) async {
-    await _apiClient.delete(OwnerApiConfig.ownerCourtEndpoint(courtId));
+    await _apiClient.delete(OwnerApiConfig.courtEndpoint(courtId));
   }
 
   Map<String, dynamic> _asMap(Map<String, dynamic> response) {

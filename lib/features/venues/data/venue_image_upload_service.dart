@@ -2,32 +2,35 @@ import '../../../core/errors/app_failure.dart';
 import '../../media/model/media_upload_models.dart';
 import '../../media/service/media_upload_service.dart';
 import '../domain/models/venue_models.dart';
-import '../domain/repositories/venues_repository.dart';
-import 'repositories/venues_repository_impl.dart';
+
+// ============================================================================
+// VenueImageUploadService
+// Thin wrapper around MediaUploadService that speaks Venue domain types.
+// Uses the correct per-type endpoint for each asset (cover vs gallery vs
+// verification) instead of the old generic /upload-url route.
+// ============================================================================
 
 abstract class VenueImageUploadService {
-  Future<VenueImageUploadRequest> requestUploadUrl({
-    required String venueId,
-    required String fileName,
-    required String contentType,
-    int? contentLength,
-  });
-
-  Future<void> uploadBytesWithRetry({
-    required VenueImageUploadRequest upload,
-    required List<int> bytes,
-    void Function(double progress)? onProgress,
-    int maxRetries,
-  });
-
-  Future<String?> confirmUpload({
-    required String venueId,
-    required VenueImageUploadRequest upload,
-  });
-
   Future<VenueImageUploadResult> uploadVenueCoverImage({
     required String venueId,
-    required String fileName,
+    required String contentType,
+    required List<int> bytes,
+    void Function(double progress)? onProgress,
+    void Function(String message)? onStatusMessage,
+    bool pollUntilReady,
+  });
+
+  Future<VenueImageUploadResult> uploadVenueGalleryImage({
+    required String venueId,
+    required String contentType,
+    required List<int> bytes,
+    void Function(double progress)? onProgress,
+    void Function(String message)? onStatusMessage,
+    bool pollUntilReady,
+  });
+
+  Future<VenueImageUploadResult> uploadVenueVerificationDocument({
+    required String venueId,
     required String contentType,
     required List<int> bytes,
     void Function(double progress)? onProgress,
@@ -37,85 +40,83 @@ abstract class VenueImageUploadService {
 }
 
 class OwnerVenueImageUploadService implements VenueImageUploadService {
-  OwnerVenueImageUploadService({VenuesRepository? repository})
-    : _repository = repository ?? VenuesRepositoryImpl(),
-      _mediaUploadService = MediaUploadService();
+  OwnerVenueImageUploadService({MediaUploadService? mediaUploadService})
+      : _mediaUploadService = mediaUploadService ?? MediaUploadService();
 
-  final VenuesRepository _repository;
   final MediaUploadService _mediaUploadService;
-
-  @override
-  Future<VenueImageUploadRequest> requestUploadUrl({
-    required String venueId,
-    required String fileName,
-    required String contentType,
-    int? contentLength,
-  }) {
-    return _repository.requestVenueImageUploadUrl(
-      venueId: venueId,
-      fileName: fileName,
-      contentType: contentType,
-      contentLength: contentLength,
-    );
-  }
-
-  @override
-  Future<void> uploadBytesWithRetry({
-    required VenueImageUploadRequest upload,
-    required List<int> bytes,
-    void Function(double progress)? onProgress,
-    int maxRetries = 2,
-  }) async {
-    Object? lastError;
-    for (var attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        await _repository.uploadVenueImageToStorage(
-          upload: upload,
-          bytes: bytes,
-          onProgress: onProgress,
-        );
-        return;
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw AppFailure(
-      'Image upload failed after retries: ${lastError ?? 'unknown error'}',
-    );
-  }
-
-  @override
-  Future<String?> confirmUpload({
-    required String venueId,
-    required VenueImageUploadRequest upload,
-  }) {
-    return _repository.confirmVenueImageUpload(
-      venueId: venueId,
-      upload: upload,
-    );
-  }
 
   @override
   Future<VenueImageUploadResult> uploadVenueCoverImage({
     required String venueId,
-    required String fileName,
     required String contentType,
     required List<int> bytes,
     void Function(double progress)? onProgress,
     void Function(String message)? onStatusMessage,
     bool pollUntilReady = true,
-  }) async {
-    try {
-      final result = await _mediaUploadService.uploadAndConfirm(
-        assetType: OwnerMediaAssetType.venueCover,
-        entityId: venueId,
+  }) {
+    return _wrap(
+      () => _mediaUploadService.uploadVenueCover(
+        venueId: venueId,
         bytes: bytes,
         contentType: contentType,
         pollUntilReady: pollUntilReady,
         onUploadProgress: onProgress,
         onStatusMessage: onStatusMessage,
-      );
+      ),
+    );
+  }
 
+  @override
+  Future<VenueImageUploadResult> uploadVenueGalleryImage({
+    required String venueId,
+    required String contentType,
+    required List<int> bytes,
+    void Function(double progress)? onProgress,
+    void Function(String message)? onStatusMessage,
+    bool pollUntilReady = true,
+  }) {
+    return _wrap(
+      () => _mediaUploadService.uploadVenueGalleryImage(
+        venueId: venueId,
+        bytes: bytes,
+        contentType: contentType,
+        pollUntilReady: pollUntilReady,
+        onUploadProgress: onProgress,
+        onStatusMessage: onStatusMessage,
+      ),
+    );
+  }
+
+  @override
+  Future<VenueImageUploadResult> uploadVenueVerificationDocument({
+    required String venueId,
+    required String contentType,
+    required List<int> bytes,
+    void Function(double progress)? onProgress,
+    void Function(String message)? onStatusMessage,
+    bool pollUntilReady = false,
+  }) {
+    return _wrap(
+      () => _mediaUploadService.uploadVenueVerification(
+        venueId: venueId,
+        bytes: bytes,
+        contentType: contentType,
+        pollUntilReady: pollUntilReady,
+        onUploadProgress: onProgress,
+        onStatusMessage: onStatusMessage,
+      ),
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // Map MediaUploadResult → VenueImageUploadResult
+  // --------------------------------------------------------------------------
+
+  Future<VenueImageUploadResult> _wrap(
+    Future<MediaUploadResult> Function() task,
+  ) async {
+    try {
+      final result = await task();
       return VenueImageUploadResult(
         upload: VenueImageUploadRequest(
           uploadUrl: '',

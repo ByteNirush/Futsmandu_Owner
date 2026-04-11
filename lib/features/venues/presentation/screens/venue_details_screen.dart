@@ -4,6 +4,7 @@ import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/safe_network_image.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../courts/presentation/screens/create_court_screen.dart';
 import '../../domain/models/court_models.dart';
@@ -210,34 +211,11 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         child: widget.venue.imageUrl != null
-                            ? Image.network(
-                                widget.venue.imageUrl!,
+                            ? SafeNetworkImage(
+                                url: widget.venue.imageUrl!,
                                 width: double.infinity,
                                 height: 180,
                                 fit: BoxFit.cover,
-                                loadingBuilder: (context, child, progress) {
-                                  if (progress == null) return child;
-                                  return Container(
-                                    width: double.infinity,
-                                    height: 180,
-                                    color: colorScheme.surfaceContainerHighest,
-                                    child: Center(
-                                      child: CircularProgressIndicator(
-                                        value: progress.expectedTotalBytes !=
-                                                null
-                                            ? progress.cumulativeBytesLoaded /
-                                                progress.expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    ),
-                                  );
-                                },
-                                errorBuilder: (context, error, stackTrace) =>
-                                    _imagePlaceholder(
-                                  context,
-                                  colorScheme,
-                                  label: 'Failed to load image',
-                                ),
                               )
                             : _imagePlaceholder(
                                 context,

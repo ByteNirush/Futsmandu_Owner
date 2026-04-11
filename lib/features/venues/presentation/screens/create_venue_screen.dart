@@ -151,7 +151,6 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     try {
       final result = await _imageUploadService.uploadVenueCoverImage(
         venueId: venueId,
-        fileName: _selectedImageName!,
         contentType: contentType,
         bytes: bytes,
         onProgress: (progress) {
