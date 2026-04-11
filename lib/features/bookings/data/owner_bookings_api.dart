@@ -79,7 +79,7 @@ class OwnerBookingsApi {
     String? notes,
   }) async {
     final response = await _apiClient.post(
-      OwnerApiConfig.offlineBookingEndpoint(),
+      OwnerApiConfig.createOfflineBookingEndpoint,
       data: {
         'court_id': courtId,
         'booking_date': _toDateOnly(bookingDate),
@@ -133,7 +133,7 @@ class OwnerBookingsApi {
     required List<String> noShowIds,
   }) async {
     final response = await _apiClient.put(
-      OwnerApiConfig.bookingAttendanceEndpoint(bookingId),
+      OwnerApiConfig.markAttendanceEndpoint(bookingId),
       data: {'no_show_ids': noShowIds},
     );
     return AttendanceResult.fromJson(response);
