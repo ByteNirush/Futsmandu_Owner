@@ -102,9 +102,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
 
     try {
       final bytes = await selected.readAsBytes();
-      final uploaded = await _mediaController.uploadAsset(
-        assetType: OwnerMediaAssetType.kycDocument,
-        entityId: ownerId,
+      final uploaded = await _mediaController.uploadKycDocument(
         docType: docType,
         bytes: bytes,
         contentType: _guessContentType(selected.name),

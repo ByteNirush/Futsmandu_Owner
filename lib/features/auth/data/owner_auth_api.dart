@@ -106,7 +106,7 @@ class OwnerAuthApi {
 
   Future<UploadDocUrl> uploadDocs({required String docType}) async {
     final result = await _apiClient.post(
-      OwnerApiConfig.uploadDocsEndpoint,
+      OwnerApiConfig.mediaKycUploadUrlEndpoint,
       data: {'docType': docType},
     );
     final uploadUrl = result['uploadUrl'];
