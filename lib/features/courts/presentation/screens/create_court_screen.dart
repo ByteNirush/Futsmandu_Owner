@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -117,7 +118,7 @@ class _CreateCourtScreenState extends State<CreateCourtScreen> {
                       Text(
                         'Court Details',
                         style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: AppFontWeights.bold),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       AppInputField(
@@ -217,7 +218,7 @@ class _CreateCourtScreenState extends State<CreateCourtScreen> {
                       Text(
                         'Operating Hours',
                         style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                            ?.copyWith(fontWeight: AppFontWeights.bold),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(
@@ -397,7 +398,7 @@ class _CreateCourtScreenState extends State<CreateCourtScreen> {
                   time.format(context),
                   style: Theme.of(
                     context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ).textTheme.titleSmall?.copyWith(fontWeight: AppFontWeights.semiBold),
                 ),
               ],
             ),
