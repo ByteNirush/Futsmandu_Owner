@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:futsmandu_design_system/components/buttons/primary_button.dart';
-import 'package:futsmandu_design_system/components/buttons/secondary_button.dart';
+import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 
-import '../../core/design_system/app_spacing.dart';
+enum AppButtonVariant {
+  primary,
+  filled,
+  outlined,
+}
 
-enum AppButtonVariant { filled, outlined, text }
-
+/// Owner-app button wrapper that delegates to the design system buttons.
+///
+/// Keeps a stable local API (`label`, `onPressed`, `isLoading`, `variant`)
+/// so every existing call-site compiles unchanged while the rendered widget
+/// comes from the shared design system.
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
     required this.label,
-    this.onPressed,
+    required this.onPressed,
     this.icon,
     this.isLoading = false,
     this.expand = true,
-    this.variant = AppButtonVariant.filled,
+    this.variant = AppButtonVariant.primary,
   });
 
   final String label;
@@ -26,63 +32,31 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (variant == AppButtonVariant.text) {
-      final textChild = isLoading
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : icon == null
-          ? Text(label)
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon),
-                const SizedBox(width: AppSpacing.xs),
-                Text(label),
-              ],
-            );
-
-      // Wrap in a Row with Expanded when expand=true to fill available width
-      // in row contexts; otherwise use IntrinsicWidth for content-based sizing.
-      if (expand) {
-        return Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: AppSpacing.buttonHeight,
-                child: TextButton(
-                  onPressed: isLoading ? null : onPressed,
-                  child: textChild,
-                ),
-              ),
-            ),
-          ],
-        );
-      }
-      return SizedBox(
-        height: AppSpacing.buttonHeight,
-        child: TextButton(
-          onPressed: isLoading ? null : onPressed,
-          child: textChild,
-        ),
-      );
-    }
-
+    final isDisabled = onPressed == null || isLoading;
     final iconWidget = icon == null ? null : Icon(icon, size: 18);
+
     if (variant == AppButtonVariant.outlined) {
       return SecondaryButton(
         label: label,
-        onPressed: onPressed,
-        icon: iconWidget,
+        onPressed: isDisabled ? null : onPressed,
+        icon: isLoading
+            ? SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              )
+            : iconWidget,
         fullWidth: expand,
       );
     }
 
+    // `filled` is a backward-compatible alias for the current `primary` style.
     return PrimaryButton(
       label: label,
-      onPressed: onPressed,
+      onPressed: isDisabled ? null : onPressed,
       icon: iconWidget,
       isLoading: isLoading,
       fullWidth: expand,
