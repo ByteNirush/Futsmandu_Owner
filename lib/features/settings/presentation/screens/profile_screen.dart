@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/futsmandu_design_system.dart'
+    show OwnerProfileHeader, ProfileSectionHeader, SettingsTile;
 
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -62,12 +64,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               children: [
                 if (owner != null)
-                  _ProfileHeaderCard(
+                  OwnerProfileHeader(
                     name: owner.displayBusinessName,
                     email: owner.email,
                     phone: owner.phone,
                     isVerified: owner.isVerified,
-                    colorScheme: colorScheme,
                     kycStatusLabel: owner.kycStatusLabel,
                     onUpdateKyc: () => _openKycUpdate(context),
                   ),
@@ -83,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     colorScheme: colorScheme,
                   ),
                 const SizedBox(height: AppSpacing.md),
-                _SectionHeader(
+                ProfileSectionHeader(
                   title: 'Quick Actions',
                   subtitle: 'Manage staff and analysts in fewer taps.',
                 ),
@@ -154,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _SectionHeader(
+                ProfileSectionHeader(
                   title: 'Preferences',
                   subtitle: 'Tune how the owner workspace behaves.',
                 ),
@@ -163,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
-                      _PreferenceTile(
+                      SettingsTile(
                         icon: Icons.notifications_outlined,
                         title: 'Notifications',
                         subtitle: 'Booking alerts and account updates',
@@ -175,7 +176,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const Divider(height: 1),
-                      _PreferenceTile(
+                      SettingsTile(
                         icon: Icons.brightness_6_outlined,
                         title: 'Theme',
                         subtitle: _themeModeLabel(themeMode),
@@ -201,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       const Divider(height: 1),
-                      _PreferenceTile(
+                      SettingsTile(
                         icon: Icons.help_outline_rounded,
                         title: 'Help & Support',
                         subtitle: 'See FAQs or contact the support team',
@@ -215,7 +216,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _SectionHeader(
+                ProfileSectionHeader(
                   title: 'Account',
                   subtitle: 'Manage access to this owner workspace.',
                 ),
@@ -358,192 +359,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _ProfileHeaderCard extends StatelessWidget {
-  const _ProfileHeaderCard({
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.isVerified,
-    required this.kycStatusLabel,
-    required this.onUpdateKyc,
-    required this.colorScheme,
-  });
-
-  final String name;
-  final String email;
-  final String phone;
-  final bool isVerified;
-  final String kycStatusLabel;
-  final VoidCallback onUpdateKyc;
-  final ColorScheme colorScheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: EdgeInsets.zero,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              colorScheme.primaryContainer,
-              colorScheme.secondaryContainer,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: colorScheme.surface,
-                  child: Text(
-                    _initials(name),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.onPrimaryContainer,
-                                  ),
-                            ),
-                          ),
-                          if (isVerified) ...[
-                            const SizedBox(width: AppSpacing.xs),
-                            Icon(
-                              Icons.verified_rounded,
-                              size: 20,
-                              color: colorScheme.primary,
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        email,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onPrimaryContainer.withValues(
-                            alpha: 0.82,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xxs),
-                      Text(
-                        phone,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onPrimaryContainer.withValues(
-                            alpha: 0.72,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: [
-                _StatusChip(
-                  label: isVerified ? 'Verified' : 'Not Verified',
-                  icon: Icons.verified_rounded,
-                  foreground: colorScheme.onPrimaryContainer,
-                  background: colorScheme.surface.withValues(alpha: 0.38),
-                ),
-                _StatusChip(
-                  label: kycStatusLabel,
-                  icon: Icons.assignment_turned_in_outlined,
-                  foreground: colorScheme.onPrimaryContainer,
-                  background: colorScheme.surface.withValues(alpha: 0.38),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: onUpdateKyc,
-                icon: const Icon(Icons.verified_user_outlined),
-                label: const Text('Update KYC'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                  side: BorderSide(color: colorScheme.onPrimaryContainer),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty) {
-      return '--';
-    }
-    if (parts.length == 1) {
-      return parts.first.characters.take(2).toString().toUpperCase();
-    }
-    final first = parts.first.characters.take(1).toString();
-    final last = parts.last.characters.take(1).toString();
-    return '$first$last'.toUpperCase();
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AppSpacing.xxs),
-        Text(
-          subtitle,
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _QuickActionCard extends StatelessWidget {
   const _QuickActionCard({
@@ -612,116 +427,6 @@ class _QuickActionCard extends StatelessWidget {
   }
 }
 
-class _PreferenceTile extends StatelessWidget {
-  const _PreferenceTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget trailing;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withValues(alpha: 0.7),
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 20),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          trailing,
-        ],
-      ),
-    );
-
-    if (onTap == null) {
-      return content;
-    }
-
-    return InkWell(onTap: onTap, child: content);
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.label,
-    required this.icon,
-    required this.foreground,
-    required this.background,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color foreground;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: foreground),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _KycStatusSection extends StatelessWidget {
   const _KycStatusSection({
@@ -807,7 +512,7 @@ class _KycStatusSection extends StatelessWidget {
     if (_isRejected) {
       return colorScheme.error;
     }
-    return colorScheme.warning;
+    return Colors.orange;
   }
 
   @override
@@ -918,12 +623,4 @@ class _KycStatusSection extends StatelessWidget {
   }
 }
 
-extension _ColorSchemeExt on ColorScheme {
-  Color get warning => Color.lerp(
-    primary,
-    Color.lerp(Colors.orange, Colors.red, 0.3) ?? Colors.orange,
-    0.5,
-  ) ??
-      Colors.orange;
-}
 

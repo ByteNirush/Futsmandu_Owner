@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/network/owner_api_client.dart';
 import '../../../../shared/widgets/app_card.dart';
+import '../../../../shared/widgets/app_extended_action_button.dart';
 import '../../../bookings/data/owner_courts_api.dart';
 import '../../data/owner_pricing_api.dart';
 import 'create_pricing_rule_screen.dart';
@@ -308,9 +309,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
               const SizedBox(height: AppSpacing.xs),
               Text('Price: ${preview.displayPrice}'),
               const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Applied rule: ${preview.ruleType ?? 'none'}',
-              ),
+              Text('Applied rule: ${preview.ruleType ?? 'none'}'),
             ],
           ),
           actions: [
@@ -325,9 +324,9 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) {
         return;
@@ -452,11 +451,14 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
+      floatingActionButton: AppExtendedActionButton(
+        heroTag: 'pricing_new_rule_fab',
         onPressed: _selectedCourtId == null ? null : () => _openRuleForm(),
-        icon: const Icon(Icons.add),
-        label: const Text('New Rule'),
+        icon: Icons.add_rounded,
+        label: 'New Rule',
+        tooltip: _selectedCourtId == null
+            ? 'Select a court first'
+            : 'Create a new pricing rule',
       ),
       body: body,
     );
