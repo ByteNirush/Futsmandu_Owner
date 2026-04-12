@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_input_field.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});

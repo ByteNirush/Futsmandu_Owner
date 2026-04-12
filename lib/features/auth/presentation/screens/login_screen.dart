@@ -4,7 +4,6 @@ import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 import '../../domain/owner_auth_validators.dart';
 import '../controllers/owner_auth_controller.dart';
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_input_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.authController});
@@ -110,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: AppFontWeights.semiBold,
                               ),
                         ),
                       ),

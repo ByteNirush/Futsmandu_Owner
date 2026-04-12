@@ -4,7 +4,6 @@ import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 import '../../domain/owner_auth_validators.dart';
 import '../controllers/owner_auth_controller.dart';
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_input_field.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({super.key, required this.authController});
