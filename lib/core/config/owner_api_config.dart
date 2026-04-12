@@ -12,7 +12,7 @@ class OwnerApiConfig {
   // );
   static const String baseUrl = String.fromEnvironment(
     'OWNER_API_BASE_URL',
-    defaultValue: 'http://localhost:3002',
+    defaultValue: 'https://aloof-word-tuition.ngrok-free.dev',
   );
 
   static const String apiPrefix = '/api/v1/owner';
@@ -140,4 +140,6 @@ class OwnerApiConfig {
 
   static String mediaDeleteAssetEndpoint(String assetId) =>
       '$mediaEndpoint/asset?assetId=$assetId';
+
+  static const String mediaKycListEndpoint = '$mediaEndpoint/kyc';
 }

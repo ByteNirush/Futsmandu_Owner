@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -42,6 +44,9 @@ class ApiClient {
   final TokenManager _tokenManager;
   final PersistCookieJar _cookieJar;
   final Dio _dio;
+  
+  // Prevent concurrent refresh requests
+  Completer<bool>? _refreshCompleter;
 
   Future<Map<String, dynamic>> get(
     String path, {
@@ -157,27 +162,66 @@ class ApiClient {
   }
 
   Future<bool> _tryRefreshToken() async {
+    // Prevent concurrent refresh requests
+    if (_refreshCompleter != null && !_refreshCompleter!.isCompleted) {
+      return _refreshCompleter!.future;
+    }
+
+    _refreshCompleter = Completer<bool>();
+
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         OwnerApiConfig.refreshEndpoint,
-        options: Options(headers: {'Content-Type': 'application/json'}),
+        // Don't override headers to allow CookieManager to include cookies automatically
+        options: Options(
+          headers: const {'Content-Type': 'application/json'},
+          validateStatus: (status) => status != null && status < 500,
+        ),
       );
-      final body = response.data;
-      final data = body?['data'];
-      final accessToken = data is Map<String, dynamic>
-          ? data['accessToken']
-          : null;
-      if (accessToken is String && accessToken.isNotEmpty) {
-        await _tokenManager.saveAccessToken(accessToken);
-        return true;
+
+      final statusCode = response.statusCode;
+      if (statusCode == 200 || statusCode == 201) {
+        final body = response.data;
+        final data = body?['data'];
+        final accessToken = data is Map<String, dynamic>
+            ? data['accessToken']
+            : null;
+
+        if (accessToken is String && accessToken.isNotEmpty) {
+          await _tokenManager.saveAccessToken(accessToken);
+          
+          // Also save refresh token if present in response
+          final refreshToken = data is Map<String, dynamic>
+              ? data['refreshToken']
+              : null;
+          if (refreshToken is String && refreshToken.isNotEmpty) {
+            await _tokenManager.saveRefreshToken(refreshToken);
+          }
+
+          _refreshCompleter?.complete(true);
+          return true;
+        }
       }
-      return false;
-    } on DioException catch (error) {
-      final statusCode = error.response?.statusCode;
+
+      // If refresh failed due to auth issues, clear session
       if (statusCode == 401 || statusCode == 403) {
         await clearSession();
       }
+
+      _refreshCompleter?.complete(false);
       return false;
+    } catch (error) {
+      // If it's a network error or other issue, still clear session on auth errors
+      if (error is DioException) {
+        final statusCode = error.response?.statusCode;
+        if (statusCode == 401 || statusCode == 403) {
+          await clearSession();
+        }
+      }
+      _refreshCompleter?.completeError(error);
+      return false;
+    } finally {
+      _refreshCompleter = null;
     }
   }
 
