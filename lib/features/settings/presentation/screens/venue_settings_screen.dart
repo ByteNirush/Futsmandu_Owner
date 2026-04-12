@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -62,7 +63,7 @@ class _VenueSettingsScreenState extends State<VenueSettingsScreen> {
                     Text(
                       'Basic Information',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeights.semiBold,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),

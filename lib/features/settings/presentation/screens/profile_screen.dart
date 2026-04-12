@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:futsmandu_design_system/futsmandu_design_system.dart'
     show OwnerProfileHeader, ProfileSectionHeader, SettingsTile;
 
@@ -401,7 +402,7 @@ class _QuickActionCard extends StatelessWidget {
                   title,
                   style: Theme.of(
                     context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                  ).textTheme.titleSmall?.copyWith(fontWeight: AppFontWeights.bold),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(
@@ -536,7 +537,7 @@ class _KycStatusSection extends StatelessWidget {
                     Text(
                       'KYC Verification Status',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppFontWeights.bold,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -588,7 +589,7 @@ class _KycStatusSection extends StatelessWidget {
                           : _isRejected
                           ? colorScheme.onErrorContainer
                           : colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeights.semiBold,
                     ),
                   ),
                 ),
