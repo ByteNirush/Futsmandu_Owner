@@ -241,3 +241,49 @@ class MediaDownloadUrlResponse {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Fetch all KYC documents for owner
+// GET /api/v1/owner/media/kyc
+// ---------------------------------------------------------------------------
+
+class KycDocumentItem {
+  const KycDocumentItem({
+    required this.docType,
+    required this.downloadUrl,
+  });
+
+  final String docType;
+  final String downloadUrl;
+
+  factory KycDocumentItem.fromJson(Map<String, dynamic> json) {
+    return KycDocumentItem(
+      docType: (json['docType'] as String?) ?? '',
+      downloadUrl: (json['downloadUrl'] as String?) ?? '',
+    );
+  }
+
+  /// Convert docType string to OwnerKycDocType enum
+  OwnerKycDocType? get kycDocType {
+    try {
+      return OwnerKycDocType.values
+          .firstWhere((e) => e.value == docType);
+    } catch (e) {
+      return null;
+    }
+  }
+}
+
+class FetchKycDocumentsResponse {
+  const FetchKycDocumentsResponse({required this.documents});
+
+  final List<KycDocumentItem> documents;
+
+  factory FetchKycDocumentsResponse.fromJson(Map<String, dynamic> json) {
+    final dataList = json['data'] as List<dynamic>? ?? [];
+    final documents = dataList
+        .map((item) => KycDocumentItem.fromJson(item as Map<String, dynamic>))
+        .toList();
+    return FetchKycDocumentsResponse(documents: documents);
+  }
+}

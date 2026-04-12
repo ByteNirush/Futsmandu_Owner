@@ -138,7 +138,16 @@ class OwnerMediaApi {
       OwnerApiConfig.mediaDeleteAssetEndpoint(assetId),
     );
   }
+  /// Fetch all KYC documents for owner
+  /// GET /api/v1/owner/media/kyc
+  /// --------------------------------------------------------------------------
 
+  Future<FetchKycDocumentsResponse> fetchAllKycDocuments() async {
+    final response = await _apiClient.get(
+      OwnerApiConfig.mediaKycListEndpoint,
+    );
+    return FetchKycDocumentsResponse.fromJson(response);
+  }
   // --------------------------------------------------------------------------
   // Private helpers
   // --------------------------------------------------------------------------
