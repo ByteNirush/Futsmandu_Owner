@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_shadows.dart';
@@ -52,7 +53,7 @@ class TimeSlotItem extends StatelessWidget {
                     startTime,
                     style: textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeights.semiBold,
                     ),
                   ),
                   const Spacer(),
@@ -60,7 +61,7 @@ class TimeSlotItem extends StatelessWidget {
                     endTime,
                     style: textTheme.labelSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: AppFontWeights.semiBold,
                     ),
                   ),
                 ],
@@ -132,7 +133,7 @@ class TimeSlotItem extends StatelessWidget {
                                 _getTitle(),
                                 style: textTheme.titleSmall?.copyWith(
                                   color: _getTextColor(colorScheme),
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: AppFontWeights.semiBold,
                                 ),
                               ),
                               if (price != null && status == SlotStatus.available)
@@ -140,7 +141,7 @@ class TimeSlotItem extends StatelessWidget {
                                   price!,
                                   style: textTheme.labelMedium?.copyWith(
                                     color: colorScheme.primary,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: AppFontWeights.bold,
                                   ),
                                 ),
                             ],
@@ -173,7 +174,7 @@ class TimeSlotItem extends StatelessWidget {
                                       bookingStatus!,
                                       style: textTheme.labelSmall?.copyWith(
                                         color: colorScheme.primary,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: AppFontWeights.bold,
                                       ),
                                     ),
                                 ),
@@ -191,7 +192,7 @@ class TimeSlotItem extends StatelessWidget {
                                       attendanceBadge!,
                                       style: textTheme.labelSmall?.copyWith(
                                         color: _attendanceBadgeTextColor(colorScheme),
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: AppFontWeights.bold,
                                       ),
                                     ),
                                   ),
