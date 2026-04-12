@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 
+import '../../../../shared/widgets/app_card.dart';
+
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
 
@@ -17,15 +19,8 @@ class DashboardHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
+    return AppCard(
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withAlpha(76), // ~30% opacity
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.primary.withAlpha(26), // ~10% opacity
-        ),
-      ),
       child: Row(
         children: [
           CircleAvatar(

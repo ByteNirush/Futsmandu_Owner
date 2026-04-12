@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_card.dart';
 
@@ -18,28 +19,42 @@ class QuickActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return AppCard(
       onTap: onTap,
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xs,
-        vertical: AppSpacing.xs,
+        horizontal: AppSpacing.xs2,
+        vertical: AppSpacing.xs2,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 28, color: colorScheme.primary),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(
+              icon,
+              size: 22,
+              color: colorScheme.primary,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           Flexible(
             child: Text(
               title,
               textAlign: TextAlign.center,
               maxLines: 2,
-              softWrap: true,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    height: 1.2, // slightly tighter line height
-                  ),
+              style: textTheme.labelSmall?.copyWith(
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

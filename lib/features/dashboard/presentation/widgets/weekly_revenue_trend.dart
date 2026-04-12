@@ -13,36 +13,61 @@ class WeeklyRevenueTrend extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Weekly Revenue Trend',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  'Weekly Revenue',
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-              Icon(Icons.show_chart, color: colorScheme.primary),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xxs,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.trending_up_rounded,
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: AppSpacing.xxs),
+                    Text(
+                      'This week',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-            child: SizedBox(
-              height: 200,
-              child: CustomPaint(
-                size: const Size(double.infinity, 200),
-                painter: _LineChartPainter(
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                  data: [5, 8, 6, 12, 15, 18, 16],
-                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                  maxY: 20,
-                ),
+          const SizedBox(height: AppSpacing.xs2),
+          SizedBox(
+            height: 180,
+            child: CustomPaint(
+              size: const Size(double.infinity, 180),
+              painter: _LineChartPainter(
+                colorScheme: colorScheme,
+                textTheme: textTheme,
+                data: [5, 8, 6, 12, 15, 18, 16],
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                maxY: 20,
               ),
             ),
           ),
@@ -76,7 +101,7 @@ class _LineChartPainter extends CustomPainter {
     final chartHeight = size.height - bottomPadding - topPadding;
     final chartWidth = size.width;
 
-    // Draw grid lines
+    // Grid lines
     final gridPaint = Paint()
       ..color = colorScheme.outlineVariant.withValues(alpha: 0.4)
       ..strokeWidth = 1
@@ -88,7 +113,7 @@ class _LineChartPainter extends CustomPainter {
       _drawDashedLine(canvas, Offset(0, y), Offset(chartWidth, y), gridPaint);
     }
 
-    // Calculate points
+    // Data points
     final spanX = chartWidth / (data.length > 1 ? data.length - 1 : 1);
     final points = <Offset>[];
     for (int i = 0; i < data.length; i++) {
@@ -97,115 +122,112 @@ class _LineChartPainter extends CustomPainter {
       points.add(Offset(x, y));
     }
 
-    // Draw gradient area
-    final path = Path();
-    path.moveTo(points.first.dx, size.height - bottomPadding);
+    // Gradient fill
+    final fillPath = Path();
+    fillPath.moveTo(points.first.dx, size.height - bottomPadding);
     for (int i = 0; i < points.length; i++) {
       if (i == 0) {
-        path.lineTo(points[i].dx, points[i].dy);
+        fillPath.lineTo(points[i].dx, points[i].dy);
       } else {
-        final prevX = points[i - 1].dx;
-        final prevY = points[i - 1].dy;
-        final currX = points[i].dx;
-        final currY = points[i].dy;
-        final cp1x = prevX + (currX - prevX) / 2;
-        final cp1y = prevY;
-        final cp2x = cp1x;
-        final cp2y = currY;
-        path.cubicTo(cp1x, cp1y, cp2x, cp2y, currX, currY);
+        final cpx = points[i - 1].dx + (points[i].dx - points[i - 1].dx) / 2;
+        fillPath.cubicTo(
+          cpx, points[i - 1].dy,
+          cpx, points[i].dy,
+          points[i].dx, points[i].dy,
+        );
       }
     }
-    path.lineTo(points.last.dx, size.height - bottomPadding);
-    path.close();
+    fillPath.lineTo(points.last.dx, size.height - bottomPadding);
+    fillPath.close();
 
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        colorScheme.primary.withValues(alpha: 0.3),
-        colorScheme.primary.withValues(alpha: 0.0),
-      ],
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.28),
+            colorScheme.primary.withValues(alpha: 0.0),
+          ],
+        ).createShader(
+          Rect.fromLTWH(0, topPadding, chartWidth, chartHeight),
+        ),
     );
-    final gradientPaint = Paint()
-      ..shader = gradient.createShader(Rect.fromLTWH(0, topPadding, chartWidth, chartHeight));
-    canvas.drawPath(path, gradientPaint);
 
-    // Draw line
+    // Line
     final linePath = Path();
     linePath.moveTo(points.first.dx, points.first.dy);
     for (int i = 1; i < points.length; i++) {
-      final prevX = points[i - 1].dx;
-      final prevY = points[i - 1].dy;
-      final currX = points[i].dx;
-      final currY = points[i].dy;
-      final cp1x = prevX + (currX - prevX) / 2;
-      final cp1y = prevY;
-      final cp2x = cp1x;
-      final cp2y = currY;
-      linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, currX, currY);
+      final cpx = points[i - 1].dx + (points[i].dx - points[i - 1].dx) / 2;
+      linePath.cubicTo(
+        cpx, points[i - 1].dy,
+        cpx, points[i].dy,
+        points[i].dx, points[i].dy,
+      );
     }
-    
-    final linePaint = Paint()
-      ..color = colorScheme.primary
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    canvas.drawPath(linePath, linePaint);
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = colorScheme.primary
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
 
-    // Draw points
-    final dotPaintOuter = Paint()
+    // Data point dots
+    final outerDot = Paint()
       ..color = colorScheme.surface
       ..style = PaintingStyle.fill;
-    final dotPaintInner = Paint()
+    final innerDot = Paint()
       ..color = colorScheme.primary
       ..style = PaintingStyle.fill;
 
     for (final point in points) {
-      canvas.drawCircle(point, 6, dotPaintOuter);
-      canvas.drawCircle(point, 4, dotPaintInner);
+      canvas.drawCircle(point, 5, outerDot);
+      canvas.drawCircle(point, 3.5, innerDot);
     }
 
-    // Draw X-axis labels
-    final textPainter = TextPainter(
+    // X-axis labels
+    final tp = TextPainter(
       textAlign: TextAlign.center,
       textDirection: TextDirection.ltr,
     );
-
     for (int i = 0; i < labels.length; i++) {
-      textPainter.text = TextSpan(
+      tp.text = TextSpan(
         text: labels[i],
         style: textTheme.labelSmall?.copyWith(
           color: colorScheme.onSurfaceVariant,
         ),
       );
-      textPainter.layout();
-      final x = points[i].dx - textPainter.width / 2;
-      final y = size.height - bottomPadding + 8;
-      textPainter.paint(canvas, Offset(x, y));
+      tp.layout();
+      tp.paint(
+        canvas,
+        Offset(
+          points[i].dx - tp.width / 2,
+          size.height - bottomPadding + 6,
+        ),
+      );
     }
   }
 
   void _drawDashedLine(Canvas canvas, Offset p1, Offset p2, Paint paint) {
     const dashWidth = 4.0;
     const dashSpace = 4.0;
-    var currentX = p1.dx;
-    while (currentX < p2.dx) {
-      final nextX = (currentX + dashWidth) < p2.dx ? (currentX + dashWidth) : p2.dx;
-      canvas.drawLine(
-        Offset(currentX, p1.dy),
-        Offset(nextX, p1.dy),
-        paint,
-      );
-      currentX += dashWidth + dashSpace;
+    var x = p1.dx;
+    while (x < p2.dx) {
+      final end = (x + dashWidth) < p2.dx ? x + dashWidth : p2.dx;
+      canvas.drawLine(Offset(x, p1.dy), Offset(end, p1.dy), paint);
+      x += dashWidth + dashSpace;
     }
   }
 
   @override
-  bool shouldRepaint(covariant _LineChartPainter oldDelegate) {
-    return oldDelegate.colorScheme != colorScheme ||
-           oldDelegate.textTheme != textTheme ||
-           !listEquals(oldDelegate.data, data) ||
-           !listEquals(oldDelegate.labels, labels) ||
-           oldDelegate.maxY != maxY;
+  bool shouldRepaint(covariant _LineChartPainter old) {
+    return old.colorScheme != colorScheme ||
+        old.textTheme != textTheme ||
+        !listEquals(old.data, data) ||
+        !listEquals(old.labels, labels) ||
+        old.maxY != maxY;
   }
 }

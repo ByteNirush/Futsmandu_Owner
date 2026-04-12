@@ -19,47 +19,46 @@ class SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return AppCard(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Accent gradient bar — flush with card top edge via negative-free layout
+          // Icon in a subtle tinted container
           Container(
-            height: 3,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(AppRadius.lg),
-                topRight: Radius.circular(AppRadius.lg),
-              ),
+              color: colorScheme.primary.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: colorScheme.primary,
             ),
           ),
-          // ✅ Single padding layer — removed inner Padding wrapper that was
-          // doubling vertical spacing on top of AppCard's own padding.
           const SizedBox(height: AppSpacing.xs),
-          Icon(icon, size: 26, color: colorScheme.primary),
-          const SizedBox(height: AppSpacing.xxs),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
           ),
-          const SizedBox(height: AppSpacing.xxs / 2),
+          const SizedBox(height: AppSpacing.xxs),
           Text(
             title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

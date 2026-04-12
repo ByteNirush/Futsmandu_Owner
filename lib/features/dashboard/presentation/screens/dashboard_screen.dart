@@ -98,13 +98,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         content: RefreshIndicator(
           onRefresh: _controller.refresh,
           child: ListView(
-            padding: const EdgeInsets.all(AppSpacing.xs),
+            // 16 px gutters on all sides; extra 8 px at the bottom so the last
+            // item doesn't sit flush against the nav bar.
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.md,
+            ),
             children: [
               const DashboardHeader(),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.xs2),
+
+              // KYC status banner (only when not approved)
               if (widget.authController != null &&
                   widget.authController!.kycStatus !=
-                      KycVerificationStatus.approved)
+                      KycVerificationStatus.approved) ...[
                 _KycStatusBanner(
                   status: widget.authController!.kycStatus,
                   rejectionReason: widget.authController!.kycRejectionReason,
@@ -114,24 +123,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Navigator.of(context).pushNamed('/upload-documents');
                   },
                 ),
-              if (widget.authController != null &&
-                  widget.authController!.kycStatus !=
-                      KycVerificationStatus.approved)
-                const SizedBox(height: AppSpacing.md),
-              const _DashboardSectionHeader(title: 'Today\'s Overview'),
-              const SizedBox(height: AppSpacing.sm),
-              // Revenue — full-width card
+                const SizedBox(height: AppSpacing.xs2),
+              ],
+
+              // ── Today's Overview ──────────────────────────────────────────
+              const _SectionHeader(title: "Today's Overview"),
+              const SizedBox(height: AppSpacing.xs),
+
+              // Revenue — full-width
               SummaryCard(
                 title: 'Revenue Today',
                 value: overview.revenueToday,
                 icon: Icons.payments_outlined,
               ),
-              const SizedBox(height: AppSpacing.sm),
-              // Bookings / Occupancy / Active Courts — 3 equal cards
+              const SizedBox(height: AppSpacing.xs),
+
+              // Bookings / Pending / Active Courts — 3 equal columns
               IntrinsicHeight(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: AppSpacing.sm,
                   children: [
                     Expanded(
                       child: SummaryCard(
@@ -140,6 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         icon: Icons.calendar_today_rounded,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: SummaryCard(
                         title: 'Pending',
@@ -147,6 +158,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         icon: Icons.hourglass_bottom_rounded,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: SummaryCard(
                         title: 'Active Courts',
@@ -157,54 +169,75 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.xs2),
+
+              // ── Weekly Trend ──────────────────────────────────────────────
               const WeeklyRevenueTrend(),
-              const SizedBox(height: AppSpacing.md),
-              const _DashboardSectionHeader(title: 'Quick Actions'),
-              const SizedBox(height: AppSpacing.sm),
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: AppSpacing.sm,
-                  children: [
-                    for (int i = 0; i < widget.quickActions.length; i++)
-                      Expanded(
-                        child: QuickActionButton(
-                          title: widget.quickActions[i].title,
-                          icon: widget.quickActions[i].icon,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: widget.quickActions[i].builder,
+              const SizedBox(height: AppSpacing.xs2),
+
+              // ── Quick Actions ─────────────────────────────────────────────
+              if (widget.quickActions.isNotEmpty) ...[
+                const _SectionHeader(title: 'Quick Actions'),
+                const SizedBox(height: AppSpacing.xs),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (int i = 0; i < widget.quickActions.length; i++) ...[
+                        if (i > 0) const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: QuickActionButton(
+                            title: widget.quickActions[i].title,
+                            icon: widget.quickActions[i].icon,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: widget.quickActions[i].builder,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
+                      ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              const _DashboardSectionHeader(title: 'Upcoming Bookings'),
-              const SizedBox(height: AppSpacing.sm),
-              Column(
-                spacing: AppSpacing.sm,
-                children: [
-                  for (final booking in overview.upcomingBookings)
-                    UpcomingBookingItem(
+                const SizedBox(height: AppSpacing.xs2),
+              ],
+
+              // ── Upcoming Bookings ─────────────────────────────────────────
+              const _SectionHeader(title: 'Upcoming Bookings'),
+              const SizedBox(height: AppSpacing.xs),
+
+              if (overview.upcomingBookings.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Center(
+                    child: Text(
+                      'No upcoming bookings for today',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                )
+              else
+                ...List.generate(overview.upcomingBookings.length, (i) {
+                  final booking = overview.upcomingBookings[i];
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: i < overview.upcomingBookings.length - 1
+                          ? AppSpacing.xs
+                          : 0,
+                    ),
+                    child: UpcomingBookingItem(
                       teamName: booking.customerName,
                       courtName: booking.courtName,
                       timeSlot: booking.timeSlot,
                       status: booking.status,
                     ),
-                  if (overview.upcomingBookings.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(AppSpacing.md),
-                        child: Text('No upcoming bookings for today'),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.lg),
+                  );
+                }),
             ],
           ),
         ),
@@ -214,7 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// KYC Banner (unchanged)
+// KYC Banner (logic untouched — only theming benefits from the new color roles)
 // ---------------------------------------------------------------------------
 
 class _KycStatusBanner extends StatelessWidget {
@@ -233,12 +266,8 @@ class _KycStatusBanner extends StatelessWidget {
   bool get _isRejected => status == KycVerificationStatus.rejected;
 
   String get _title {
-    if (_isRejected) {
-      return 'KYC Rejected';
-    }
-    if (hasUploadedAnyKycDocument) {
-      return 'KYC Under Review';
-    }
+    if (_isRejected) return 'KYC Rejected';
+    if (hasUploadedAnyKycDocument) return 'KYC Under Review';
     return 'Complete KYC Verification';
   }
 
@@ -252,7 +281,7 @@ class _KycStatusBanner extends StatelessWidget {
     if (hasUploadedAnyKycDocument) {
       return 'Documents submitted. We will notify you once review is complete.';
     }
-    return 'Upload required documents to unlock all features';
+    return 'Upload required documents to unlock all features.';
   }
 
   @override
@@ -269,57 +298,43 @@ class _KycStatusBanner extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              containerColor,
-              containerColor.withValues(alpha: 0.72),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: containerColor, // Solid eSewa-style background, no gradient
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Icon(
-                  _isRejected
-                      ? Icons.error_rounded
-                      : Icons.hourglass_top_rounded,
-                  color: onContainerColor,
-                  size: 28,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _title,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: onContainerColor,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        _subtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: onContainerColor,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: onContainerColor,
-                ),
-              ],
+            Icon(
+              _isRejected
+                  ? Icons.error_rounded
+                  : Icons.hourglass_top_rounded,
+              color: onContainerColor,
+              size: 28,
             ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: onContainerColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    _subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: onContainerColor,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Icon(Icons.chevron_right_rounded, color: onContainerColor),
           ],
         ),
       ),
@@ -328,37 +343,36 @@ class _KycStatusBanner extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Section header (unchanged)
+// Section header
 // ---------------------------------------------------------------------------
 
-class _DashboardSectionHeader extends StatelessWidget {
-  const _DashboardSectionHeader({required this.title});
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
 
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 18,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(2),
-            ),
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 16,
+          decoration: BoxDecoration(
+            color: colorScheme.primary,
+            borderRadius: BorderRadius.circular(2),
           ),
-          const SizedBox(width: AppSpacing.xs),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.1,
+              ),
+        ),
+      ],
     );
   }
 }
