@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
-import '../service/uploaded_image_cache.dart';
+import '../../service/uploaded_image_cache.dart';
 
 // ============================================================================
 // UploadedImageDisplay
@@ -13,10 +16,9 @@ import '../service/uploaded_image_cache.dart';
 
 class UploadedImageDisplay extends StatelessWidget {
   const UploadedImageDisplay({
-    Key? key,
-    required this.image,
+    super.key,
+    this.image,
     this.assetId,
-    this.key,
     this.height = 200,
     this.width = double.infinity,
     this.fit = BoxFit.cover,
@@ -24,16 +26,13 @@ class UploadedImageDisplay extends StatelessWidget {
     this.placeholder,
     this.errorBuilder,
     this.cacheKey,
-  }) : super(key: key);
+  });
 
   /// Asset ID to look up in cache
   final String? assetId;
 
   /// Image URL directly
   final String? image;
-
-  /// Asset key for lookup
-  final String? key;
 
   /// Image height
   final double height;
@@ -51,7 +50,7 @@ class UploadedImageDisplay extends StatelessWidget {
   final Widget? placeholder;
 
   /// Error builder
-  final Widget Function(BuildContext, String, dynamic)? errorBuilder;
+  final ImageErrorWidgetBuilder? errorBuilder;
 
   /// Custom cache key (advanced)
   final String? cacheKey;
@@ -63,8 +62,8 @@ class UploadedImageDisplay extends StatelessWidget {
 
     if (assetId != null && assetId!.isNotEmpty) {
       cached = uploadedImageCache.get(assetId!);
-    } else if (key != null && key!.isNotEmpty) {
-      cached = uploadedImageCache.getByKey(key!);
+    } else if (cacheKey != null && cacheKey!.isNotEmpty) {
+      cached = uploadedImageCache.getByKey(cacheKey!);
     }
 
     // Prioritize: cached display URL > provided image > placeholder
@@ -128,16 +127,16 @@ class UploadedImageDisplay extends StatelessWidget {
 
   Widget _onImageError(
     BuildContext context,
-    String url,
-    dynamic error,
+    Object error,
+    StackTrace? stackTrace,
   ) {
     if (errorBuilder != null) {
-      return errorBuilder!(context, url, error);
+      return errorBuilder!(context, error, stackTrace);
     }
     return _buildPlaceholder();
   }
 
-  static List<int> _decodeBase64(String url) {
+  static Uint8List _decodeBase64(String url) {
     // Remove data URI prefix if present
     var base64String = url;
     if (url.contains(',')) {
@@ -145,7 +144,7 @@ class UploadedImageDisplay extends StatelessWidget {
     }
     // Remove any whitespace
     base64String = base64String.replaceAll(RegExp(r'\s'), '');
-    return base64Decode(base64String);
+    return Uint8List.fromList(base64Decode(base64String));
   }
 }
 
