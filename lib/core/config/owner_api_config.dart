@@ -6,6 +6,10 @@ class OwnerApiConfig {
   // BASE
   // ---------------------------------------------------------------------------
 
+  // static const String baseUrl = String.fromEnvironment(
+  //     'OWNER_API_BASE_URL',
+  //     defaultValue: 'https://aloof-word-tuition.ngrok-free.dev',
+  // );
   static const String baseUrl = String.fromEnvironment(
     'OWNER_API_BASE_URL',
     defaultValue: 'http://localhost:3002',
