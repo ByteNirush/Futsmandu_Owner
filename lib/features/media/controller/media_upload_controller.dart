@@ -127,6 +127,9 @@ class MediaUploadController extends ChangeNotifier {
   Future<String> getPrivateDownloadUrl(String key) =>
       _service.getPrivateDownloadUrl(key);
 
+  Future<FetchKycDocumentsResponse> fetchAllKycDocuments() =>
+      _service.fetchAllKycDocuments();
+
   void clearError() {
     if (_errorMessage == null) return;
     _errorMessage = null;
