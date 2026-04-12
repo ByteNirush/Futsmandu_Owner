@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -77,13 +78,24 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
 
   IconData _getAmenityIcon(String amenity) {
     final lower = amenity.toLowerCase();
-    if (lower.contains('park')) return Icons.local_parking_rounded;
-    if (lower.contains('wifi') || lower.contains('internet'))
+    if (lower.contains('park')) {
+      return Icons.local_parking_rounded;
+    }
+    if (lower.contains('wifi') || lower.contains('internet')) {
       return Icons.wifi_rounded;
-    if (lower.contains('food') || lower.contains('cafe')) return Icons.restaurant_rounded;
-    if (lower.contains('seating') || lower.contains('lounge')) return Icons.chair_rounded;
-    if (lower.contains('light') || lower.contains('flood')) return Icons.light_rounded;
-    if (lower.contains('shoe') || lower.contains('equipment')) return Icons.sports_rounded;
+    }
+    if (lower.contains('food') || lower.contains('cafe')) {
+      return Icons.restaurant_rounded;
+    }
+    if (lower.contains('seating') || lower.contains('lounge')) {
+      return Icons.chair_rounded;
+    }
+    if (lower.contains('light') || lower.contains('flood')) {
+      return Icons.light_rounded;
+    }
+    if (lower.contains('shoe') || lower.contains('equipment')) {
+      return Icons.sports_rounded;
+    }
     return Icons.check_circle_rounded;
   }
 
@@ -208,7 +220,7 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
                                                     .titleLarge
                                                     ?.copyWith(
                                                       fontWeight:
-                                                          FontWeight.w700,
+                                                          AppFontWeights.bold,
                                                     ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
