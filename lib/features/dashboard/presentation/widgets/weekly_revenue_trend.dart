@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_card.dart';
@@ -23,7 +24,7 @@ class WeeklyRevenueTrend extends StatelessWidget {
                 child: Text(
                   'Weekly Revenue',
                   style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppFontWeights.bold,
                   ),
                 ),
               ),
@@ -49,7 +50,7 @@ class WeeklyRevenueTrend extends StatelessWidget {
                       'This week',
                       style: textTheme.labelSmall?.copyWith(
                         color: colorScheme.primary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeights.semiBold,
                       ),
                     ),
                   ],

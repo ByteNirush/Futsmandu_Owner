@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -53,7 +54,7 @@ class QuickActionButton extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: textTheme.labelSmall?.copyWith(
                 height: 1.3,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeights.semiBold,
               ),
             ),
           ),

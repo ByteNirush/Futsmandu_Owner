@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_card.dart';
@@ -320,7 +321,7 @@ class _KycStatusBanner extends StatelessWidget {
                     _title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           color: onContainerColor,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: AppFontWeights.bold,
                         ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
@@ -368,7 +369,7 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: AppFontWeights.bold,
                 letterSpacing: -0.1,
               ),
         ),

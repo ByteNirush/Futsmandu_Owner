@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -47,7 +48,7 @@ class SummaryCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: AppFontWeights.bold,
               letterSpacing: -0.2,
             ),
           ),

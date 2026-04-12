@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -91,7 +92,7 @@ class UpcomingBookingItem extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: AppFontWeights.semiBold,
                             ),
                           ),
                           const SizedBox(height: AppSpacing.xxs),
@@ -123,7 +124,7 @@ class UpcomingBookingItem extends StatelessWidget {
                         status.toUpperCase(),
                         style: textTheme.labelSmall?.copyWith(
                           color: statusColor,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: AppFontWeights.bold,
                           letterSpacing: 0.4,
                         ),
                       ),
