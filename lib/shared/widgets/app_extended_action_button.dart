@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../core/design_system/app_radius.dart';
 
@@ -53,7 +54,7 @@ class AppExtendedActionButton extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: textTheme.labelLarge?.copyWith(
             fontSize: 15,
-            fontWeight: FontWeight.w700,
+            fontWeight: AppFontWeights.bold,
             letterSpacing: 0.15,
           ),
         ),
