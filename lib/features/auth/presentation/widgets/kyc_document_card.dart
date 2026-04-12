@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../media/presentation/widgets/uploaded_image_display.dart';
 
@@ -10,9 +11,9 @@ import '../../../media/presentation/widgets/uploaded_image_display.dart';
 
 class KycDocumentStatusBadge extends StatelessWidget {
   const KycDocumentStatusBadge({
-    Key? key,
+    super.key,
     required this.status,
-  }) : super(key: key);
+  });
 
   final KycDocumentUploadStatus status;
 
@@ -36,7 +37,7 @@ class KycDocumentStatusBadge extends StatelessWidget {
             status.label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: colors.textColor,
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeights.semiBold,
             ),
           ),
         ],
@@ -88,39 +89,39 @@ extension KycDocumentStatusExtension on KycDocumentUploadStatus {
     }
   }
 
-  _ColorScheme colorScheme(BuildContext context) {
+  KycDocumentStatusColors colorScheme(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     switch (this) {
       case KycDocumentUploadStatus.notStarted:
-        return _ColorScheme(
+        return KycDocumentStatusColors(
           backgroundColor: colors.primaryContainer,
           textColor: colors.onPrimaryContainer,
           iconColor: colors.onPrimaryContainer,
           borderColor: colors.primary,
         );
       case KycDocumentUploadStatus.uploading:
-        return _ColorScheme(
+        return KycDocumentStatusColors(
           backgroundColor: colors.primaryContainer,
           textColor: colors.onPrimaryContainer,
           iconColor: colors.onPrimaryContainer,
           borderColor: colors.primary,
         );
       case KycDocumentUploadStatus.pending:
-        return _ColorScheme(
+        return KycDocumentStatusColors(
           backgroundColor: const Color(0xFFFFF8E1),
           textColor: const Color(0xFFF57F17),
           iconColor: const Color(0xFFF57F17),
           borderColor: const Color(0xFFFFB300),
         );
       case KycDocumentUploadStatus.approved:
-        return _ColorScheme(
+        return KycDocumentStatusColors(
           backgroundColor: colors.tertiaryContainer,
           textColor: colors.onTertiaryContainer,
           iconColor: colors.onTertiaryContainer,
           borderColor: colors.tertiary,
         );
       case KycDocumentUploadStatus.rejected:
-        return _ColorScheme(
+        return KycDocumentStatusColors(
           backgroundColor: colors.errorContainer,
           textColor: colors.onErrorContainer,
           iconColor: colors.onErrorContainer,
@@ -130,8 +131,8 @@ extension KycDocumentStatusExtension on KycDocumentUploadStatus {
   }
 }
 
-class _ColorScheme {
-  _ColorScheme({
+class KycDocumentStatusColors {
+  KycDocumentStatusColors({
     required this.backgroundColor,
     required this.textColor,
     required this.iconColor,
@@ -150,7 +151,7 @@ class _ColorScheme {
 
 class KycDocumentCard extends StatefulWidget {
   const KycDocumentCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.docType,
@@ -162,7 +163,7 @@ class KycDocumentCard extends StatefulWidget {
     this.isLoading = false,
     this.uploadProgress,
     this.rejectionReason,
-  }) : super(key: key);
+  });
 
   final String title;
   final String description;
@@ -222,7 +223,7 @@ class _KycDocumentCardState extends State<KycDocumentCard> {
                           Text(
                             widget.title,
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: AppFontWeights.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -277,7 +278,7 @@ class _KycDocumentCardState extends State<KycDocumentCard> {
           if (showPreviewArea)
             Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 border: Border(
                   bottom: BorderSide(
                     color: Theme.of(context).colorScheme.outlineVariant,
@@ -361,7 +362,7 @@ class _KycDocumentCardState extends State<KycDocumentCard> {
           Text(
             'Document Preview',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: AppFontWeights.semiBold,
             ),
           ),
           const SizedBox(height: AppSpacing.md),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/theme/theme_provider.dart';
 import '../../../analytics/presentation/screens/analytics_overview_screen.dart';
@@ -189,13 +190,13 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
               final baseStyle = Theme.of(context).textTheme.labelSmall
                   ?.copyWith(
                     fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: AppFontWeights.regular,
                     height: 1.2,
                   );
               if (states.contains(WidgetState.selected)) {
                 return baseStyle?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeights.semiBold,
                 );
               }
               return baseStyle?.copyWith(

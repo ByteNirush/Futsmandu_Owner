@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
@@ -40,7 +41,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   final ImagePicker _imagePicker = ImagePicker();
 
   Owner? _owner;
-  String? _ownerId;
 
   // Track upload states
   final Map<String, _DocumentState> _documentStates =
@@ -59,11 +59,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   }
 
   void _initializeDocumentStates() {
-    const docTypes = [
-      'citizenship',
-      'business_registration',
-      'business_pan',
-    ];
+    const docTypes = ['citizenship', 'business_registration', 'business_pan'];
     for (final docType in docTypes) {
       _documentStates[docType] = _DocumentState(
         docType: docType,
@@ -84,10 +80,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     setState(() {
       _owner = owner;
-      _ownerId = owner?.id;
 
       // Update document states based on owner's KYC data
-      for (final entry in owner?.kycDocumentKeys.entries ?? []) {
+      for (final entry in
+          owner?.kycDocumentKeys.entries ??
+          const <MapEntry<String, String>>[]) {
         final docType = entry.key;
         final docKey = entry.value;
 
@@ -148,10 +145,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
     if (selected == null) return;
 
     final bytes = await selected.readAsBytes();
-    
+
     // Create a temporary assetId for instant preview caching
     // This allows the image to show immediately while upload is in progress
-    final tempAssetId = 'temp_${docType}_${DateTime.now().millisecondsSinceEpoch}';
+    final tempAssetId =
+        'temp_${docType}_${DateTime.now().millisecondsSinceEpoch}';
 
     setState(() {
       _documentStates[docType] = _DocumentState(
@@ -166,7 +164,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       // Import this at the top of file if not already there
       // Import UploadedImageCache for immediate caching
       final uploadedImageCache = UploadedImageCache();
-      
+
       // Cache the image immediately for instant preview display
       // This creates a base64 data URL that shows instantly
       uploadedImageCache.save(
@@ -174,9 +172,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         key: '', // Temporary, will be replaced after upload
         imageBytes: bytes,
       );
-
-      // Update progress periodically
-      final progressController = _mediaController;
 
       final uploaded = await _mediaController.uploadKycDocument(
         docType: _parseDocType(docType),
@@ -313,36 +308,33 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
             // Document Cards
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final docType = _documentStates.keys.toList()[index];
-                  final state = _documentStates[docType]!;
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final docType = _documentStates.keys.toList()[index];
+                final state = _documentStates[docType]!;
 
-                  return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg) +
-                            const EdgeInsets.only(bottom: AppSpacing.md),
-                    child: KycDocumentCard(
-                      title: _getDocumentTitle(docType),
-                      description: _getDocumentDescription(docType),
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg) +
+                      const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: KycDocumentCard(
+                    title: _getDocumentTitle(docType),
+                    description: _getDocumentDescription(docType),
+                    docType: docType,
+                    status: state.status,
+                    assetId: state.assetId,
+                    imagePath: state.imagePath,
+                    isLoading:
+                        _mediaController.isUploading &&
+                        _documentStates.keys.elementAt(index) == docType,
+                    uploadProgress: _mediaController.progress,
+                    onUploadPressed: () => _pickAndUploadDocument(
                       docType: docType,
-                      status: state.status,
-                      assetId: state.assetId,
-                      imagePath: state.imagePath,
-                      isLoading: _mediaController.isUploading &&
-                          _documentStates.keys.elementAt(index) == docType,
-                      uploadProgress: _mediaController.progress,
-                      onUploadPressed: () =>
-                          _pickAndUploadDocument(
-                            docType: docType,
-                            title: _getDocumentTitle(docType),
-                          ),
-                      rejectionReason: _owner?.kycRejectionReason,
+                      title: _getDocumentTitle(docType),
                     ),
-                  );
-                },
-                childCount: _documentStates.length,
-              ),
+                    rejectionReason: _owner?.kycRejectionReason,
+                  ),
+                );
+              }, childCount: _documentStates.length),
             ),
 
             // Submit Button
@@ -354,8 +346,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                   children: [
                     AppButton(
                       label: 'Submit for Review',
-                      onPressed: _owner != null &&
-                              _owner!.hasUploadedAllKycDocuments
+                      onPressed:
+                          _owner != null && _owner!.hasUploadedAllKycDocuments
                           ? () {
                               if (widget.onSubmitted != null) {
                                 widget.onSubmitted!();
@@ -393,7 +385,6 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
 
     final isApproved = owner.kycStatus == KycVerificationStatus.approved;
     final isRejected = owner.kycStatus == KycVerificationStatus.rejected;
-    final isPending = owner.kycStatus == KycVerificationStatus.pending;
 
     Color bgColor;
     Color fgColor;
@@ -418,10 +409,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       fgColor = const Color(0xFFF57F17);
       icon = Icons.hourglass_top_rounded;
       title = '⏳ KYC Pending';
-      subtitle =
-          owner.hasUploadedAnyKycDocument
-              ? 'Your documents are under review'
-              : 'Upload your documents to get started';
+      subtitle = owner.hasUploadedAnyKycDocument
+          ? 'Your documents are under review'
+          : 'Upload your documents to get started';
     }
 
     return Container(
@@ -429,10 +419,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: fgColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: fgColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -446,15 +433,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                   title,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: fgColor,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: AppFontWeights.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: fgColor,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: fgColor),
                 ),
               ],
             ),
@@ -489,7 +476,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                 'Document Requirements',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: AppFontWeights.bold,
                 ),
               ),
             ],

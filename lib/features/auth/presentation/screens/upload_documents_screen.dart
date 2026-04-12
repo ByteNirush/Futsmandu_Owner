@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
@@ -213,7 +214,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                           'Upload clear photos or scans of your documents',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: AppFontWeights.regular,
                           ),
                         ),
                       ),
@@ -236,7 +237,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
             Text(
               'Required Documents',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: AppFontWeights.bold,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -290,7 +291,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                                       child: Text(
                                         title,
                                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w700,
+                                          fontWeight: AppFontWeights.bold,
                                         ),
                                       ),
                                     ),
@@ -311,7 +312,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                                             color: Theme.of(context)
                                                 .colorScheme
                                                 .onTertiaryContainer,
-                                            fontWeight: FontWeight.w600,
+                                            fontWeight: AppFontWeights.semiBold,
                                           ),
                                         ),
                                       ),
@@ -349,7 +350,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen> {
                               Text(
                                 'Document ID',
                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: AppFontWeights.semiBold,
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.xs),
@@ -468,7 +469,7 @@ class _KycOverviewCard extends StatelessWidget {
                   title,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: fgColor,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppFontWeights.bold,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),

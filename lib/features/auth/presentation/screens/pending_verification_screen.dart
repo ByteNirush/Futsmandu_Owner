@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
@@ -31,7 +32,7 @@ class PendingVerificationScreen extends StatelessWidget {
                     'Complete KYC Verification',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: AppFontWeights.bold,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
