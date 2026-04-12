@@ -97,12 +97,10 @@ class VenueCourtsController extends ChangeNotifier {
       _errorMessage = error.toString();
       rethrow;
     } finally {
-      if (_isDisposed) {
-        return;
+      if (!_isDisposed) {
+        _isBusy = false;
+        _notifyIfMounted();
       }
-
-      _isBusy = false;
-      _notifyIfMounted();
     }
   }
 
@@ -145,12 +143,10 @@ class VenueCourtsController extends ChangeNotifier {
       _notifyIfMounted();
       rethrow;
     } finally {
-      if (_isDisposed) {
-        return;
+      if (!_isDisposed) {
+        _isBusy = false;
+        _notifyIfMounted();
       }
-
-      _isBusy = false;
-      _notifyIfMounted();
     }
   }
 
