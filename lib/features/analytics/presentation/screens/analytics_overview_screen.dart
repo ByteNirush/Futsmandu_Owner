@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/network/owner_api_client.dart';
@@ -179,7 +180,7 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
             Text(
               value,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: AppFontWeights.bold,
                   ),
             ),
             const SizedBox(height: AppSpacing.xs),
@@ -212,7 +213,7 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
               Text(
                 'Revenue Trend',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                      fontWeight: AppFontWeights.bold,
                     ),
               ),
               const Spacer(),
@@ -299,7 +300,7 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
           Text(
             'Bookings Heatmap',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeights.bold,
                 ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -371,7 +372,7 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
           Text(
             'No-show Rate by Court',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: AppFontWeights.bold,
                 ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -440,7 +441,7 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
                   Text(
                     _rangeLabel(),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: AppFontWeights.bold,
                         ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
