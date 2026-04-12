@@ -1,86 +1,108 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 
-import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_input_field.dart';
-import '../../../../shared/widgets/app_logo.dart';
-import '../widgets/auth_header.dart';
 
-class ResetPasswordScreen extends StatelessWidget {
+class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              physics: const ClampingScrollPhysics(),
-              padding: EdgeInsets.only(
-                left: AppSpacing.md,
-                right: AppSpacing.md,
-                bottom: bottomInset + AppSpacing.lg,
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  String? _validatePassword(String? value) {
+    final password = value ?? '';
+    if (password.isEmpty) return 'Password is required';
+    if (password.length < 8) return 'Password must be at least 8 characters';
+    if (password.length > 64) return 'Password must be 64 characters or less';
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      return 'Password must contain an uppercase letter';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(password)) {
+      return 'Password must contain a number';
+    }
+    return null;
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if ((value ?? '').isEmpty) return 'Please confirm your password';
+    if (value != _newPasswordController.text) return 'Passwords do not match';
+    return null;
+  }
+
+  Future<void> _savePassword() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSaving = true);
+
+    // Backend call goes here — wired up by the consuming screen's controller.
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Password reset successfully!')),
+    );
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AuthScaffold(
+      role: AppRole.owner,
+      showAppBar: true,
+      child: AuthCard(
+        role: AppRole.owner,
+        title: 'Set New Password',
+        subtitle: 'Enter your new password below',
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AppInputField(
+                controller: _newPasswordController,
+                label: 'New Password',
+                hint: 'Create new password',
+                prefixIcon: Icons.lock_outline,
+                isPassword: true,
+                validator: _validatePassword,
               ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 56),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSpacing.lg),
-                    const Center(child: AppLogo(size: 72.0)),
-                    const SizedBox(height: AppSpacing.sm),
-                    const AuthHeader(
-                      title: 'Set New Password',
-                      subtitle: 'Enter your new password below',
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    
-                    const AppInputField(
-                      label: 'New Password',
-                      hint: 'Create new password',
-                      prefixIcon: Icons.lock_outline,
-                      isPassword: true,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    const AppInputField(
-                      label: 'Confirm Password',
-                      hint: 'Confirm new password',
-                      prefixIcon: Icons.lock_outline,
-                      isPassword: true,
-                      textInputAction: TextInputAction.done,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    
-                    AppButton(
-                      label: 'Save Password',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Password reset successfully!')),
-                        );
-                        // Navigate back to login
-                        Navigator.pushNamedAndRemoveUntil(
-                          context, 
-                          '/login', 
-                          (route) => false,
-                        );
-                      },
-                    ),
-                  ],
-                ),
+              const SizedBox(height: AppSpacing.xs),
+              AppInputField(
+                controller: _confirmPasswordController,
+                label: 'Confirm Password',
+                hint: 'Confirm new password',
+                prefixIcon: Icons.lock_outline,
+                isPassword: true,
+                textInputAction: TextInputAction.done,
+                validator: _validateConfirmPassword,
               ),
-            );
-          },
+              const SizedBox(height: AppSpacing.md),
+              AppButton(
+                label: 'Save Password',
+                isLoading: _isSaving,
+                onPressed: _isSaving ? null : _savePassword,
+              ),
+            ],
+          ),
         ),
       ),
     );
