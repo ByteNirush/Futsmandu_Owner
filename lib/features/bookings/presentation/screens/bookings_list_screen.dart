@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
@@ -553,9 +554,7 @@ class _BookingsListScreenState extends State<BookingsListScreen>
         headerStyle: HeaderStyle(
           formatButtonVisible: false,
           titleCentered: true,
-          titleTextStyle: textTheme.titleMedium!.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          titleTextStyle: textTheme.titleMedium!,
           leftChevronIcon: Icon(
             Icons.chevron_left_rounded,
             color: colorScheme.onSurface,
@@ -570,11 +569,11 @@ class _BookingsListScreenState extends State<BookingsListScreen>
         daysOfWeekStyle: DaysOfWeekStyle(
           weekdayStyle: textTheme.labelSmall!.copyWith(
             color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeights.semiBold,
           ),
           weekendStyle: textTheme.labelSmall!.copyWith(
             color: colorScheme.error,
-            fontWeight: FontWeight.w600,
+            fontWeight: AppFontWeights.semiBold,
           ),
         ),
         calendarStyle: CalendarStyle(
@@ -582,18 +581,16 @@ class _BookingsListScreenState extends State<BookingsListScreen>
             color: colorScheme.primary,
             shape: BoxShape.circle,
           ),
-          selectedTextStyle: textTheme.bodyMedium!.copyWith(
+          selectedTextStyle: textTheme.titleSmall!.copyWith(
             color: colorScheme.onPrimary,
-            fontWeight: FontWeight.w700,
           ),
           todayDecoration: BoxDecoration(
             color: colorScheme.secondary.withValues(alpha: 0.18),
             shape: BoxShape.circle,
             border: Border.all(color: colorScheme.secondary, width: 1.5),
           ),
-          todayTextStyle: textTheme.bodyMedium!.copyWith(
+          todayTextStyle: textTheme.titleSmall!.copyWith(
             color: colorScheme.secondary,
-            fontWeight: FontWeight.w700,
           ),
           defaultTextStyle: textTheme.bodyMedium!.copyWith(
             color: colorScheme.onSurface,
@@ -728,10 +725,7 @@ class _BookingsListScreenState extends State<BookingsListScreen>
             children: [
               Text(
                 'Daily Schedule',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                    ),
+                style: Theme.of(context).textTheme.titleLarge,
               ),
             ],
           ),
@@ -864,9 +858,7 @@ class _BookingsListScreenState extends State<BookingsListScreen>
                     Expanded(
                       child: Text(
                         'Filters',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
                     OutlinedButton.icon(
@@ -939,10 +931,7 @@ class _BookingsListScreenState extends State<BookingsListScreen>
                             Expanded(
                               child: Text(
                                 _bookingCardTitle(booking),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w700),
+                                style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ),
                             Container(
@@ -958,10 +947,7 @@ class _BookingsListScreenState extends State<BookingsListScreen>
                               ),
                               child: Text(
                                 _formatListStatus(booking.status),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(fontWeight: FontWeight.w700),
+                                style: Theme.of(context).textTheme.labelMedium,
                               ),
                             ),
                           ],

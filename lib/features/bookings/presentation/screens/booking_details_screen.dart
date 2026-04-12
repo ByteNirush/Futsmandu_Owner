@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/network/owner_api_client.dart';
@@ -229,7 +230,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                               booking?.status ?? '-',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: AppFontWeights.semiBold,
                                   ),
                             ),
                           ],
@@ -279,7 +280,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                     Text(
                       'Attendance',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: AppFontWeights.bold,
                           ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
