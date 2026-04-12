@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
@@ -272,7 +273,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
         style: Theme.of(context)
             .textTheme
             .titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700),
+            ?.copyWith(fontWeight: AppFontWeights.bold),
       ),
     );
   }
