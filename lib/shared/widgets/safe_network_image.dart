@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import '../../../core/network/debug_dio_logging_interceptor.dart';
 import '../../../core/network/token_manager.dart';
 
 /// A widget that safely loads images from protected sources (like Cloudflare R2).
@@ -54,7 +55,7 @@ class _SafeNetworkImageState extends State<SafeNetworkImage> {
     });
 
     try {
-      final dio = Dio();
+      final dio = Dio()..interceptors.add(DebugDioLoggingInterceptor());
       final tokenManager = TokenManager();
       final token = await tokenManager.getAccessToken();
 

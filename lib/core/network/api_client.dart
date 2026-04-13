@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 import '../config/owner_api_config.dart';
+import 'debug_dio_logging_interceptor.dart';
 import 'secure_cookie_storage.dart';
 import 'token_manager.dart';
 
@@ -39,6 +40,7 @@ class ApiClient {
               ),
             ) {
     _dio.interceptors.add(CookieManager(_cookieJar));
+              _dio.interceptors.add(DebugDioLoggingInterceptor());
   }
 
   final TokenManager _tokenManager;

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/network/debug_dio_logging_interceptor.dart';
 import '../../../../core/network/owner_api_client.dart';
 import '../../domain/models/court_models.dart';
 import '../../domain/models/venue_models.dart';
@@ -23,7 +24,7 @@ class VenuesRepositoryImpl implements VenuesRepository {
            receiveTimeout: const Duration(seconds: 60),
            sendTimeout: const Duration(seconds: 60),
          ),
-       );
+       )..interceptors.add(DebugDioLoggingInterceptor());
 
   final OwnerVenuesRemoteDataSource _venuesDataSource;
   final OwnerCourtsRemoteDataSource _courtsDataSource;

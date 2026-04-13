@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/config/owner_api_config.dart';
+import '../../../core/network/debug_dio_logging_interceptor.dart';
 import '../../../core/network/owner_api_client.dart';
 import '../model/media_upload_models.dart';
 
@@ -177,7 +178,7 @@ class OwnerMediaStorageUploader {
                 receiveTimeout: const Duration(seconds: 120),
                 sendTimeout: const Duration(seconds: 120),
               ),
-            );
+            )..interceptors.add(DebugDioLoggingInterceptor());
 
   final Dio _dio;
 
