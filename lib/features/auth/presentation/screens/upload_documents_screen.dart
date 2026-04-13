@@ -8,6 +8,8 @@ import '../../../../core/design_system/app_spacing.dart';
 import '../../../media/controller/media_upload_controller.dart';
 import '../../../media/model/media_upload_models.dart';
 import '../../../media/presentation/widgets/media_upload_tile.dart';
+import '../../../media/presentation/widgets/refreshable_kyc_image_display.dart';
+import '../../../media/service/kyc_image_url_provider.dart';
 import '../../../media/service/media_upload_service.dart';
 import '../../data/owner_auth_session_store.dart';
 import '../../domain/owner_auth_models.dart';
@@ -32,6 +34,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
     with SingleTickerProviderStateMixin {
   final MediaUploadController _mediaController =
       MediaUploadController(service: MediaUploadService());
+  final KycImageUrlProvider _imageUrlProvider = KycImageUrlProvider();
   final OwnerAuthSessionStore _sessionStore = OwnerAuthSessionStore();
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -185,7 +188,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
         docType: docType,
         bytes: bytes,
         contentType: contentType,
-        pollUntilReady: false,
+        pollUntilReady: true,  // ✅ Wait for image to be processed by backend
       );
 
       if (!mounted) return;
@@ -220,6 +223,9 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
 
       HapticFeedback.lightImpact();
       _showSnack('Document uploaded successfully!');
+
+      // ✨ IMPORTANT: Refresh previously uploaded documents to show the new upload
+      await _loadPreviouslyUploadedDocuments();
     } catch (e) {
       if (!mounted) return;
       setState(() => _tileStates[docType.value] = UploadTileState.error);
@@ -262,6 +268,8 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
             docType: docTypeName,
             downloadUrl: doc.downloadUrl,
             accentColor: const Color(0xFF00C896),
+            imageUrlProvider: _imageUrlProvider,
+            docTypeKey: doc.docType,
           ),
         ),
       );
@@ -752,11 +760,15 @@ class _PreviousDocumentCard extends StatefulWidget {
     required this.docType,
     required this.downloadUrl,
     required this.accentColor,
+    required this.imageUrlProvider,
+    required this.docTypeKey,
   });
 
   final String docType;
   final String downloadUrl;
   final Color accentColor;
+  final KycImageUrlProvider imageUrlProvider;
+  final String docTypeKey;
 
   @override
   State<_PreviousDocumentCard> createState() => _PreviousDocumentCardState();
@@ -791,7 +803,9 @@ class _PreviousDocumentCardState extends State<_PreviousDocumentCard> {
             // Preview area with image
             _PreviousDocPreviewArea(
               downloadUrl: widget.downloadUrl,
+              docType: widget.docTypeKey,
               accentColor: widget.accentColor,
+              imageUrlProvider: widget.imageUrlProvider,
             ),
             // Content area
             Padding(
@@ -854,158 +868,37 @@ class _PreviousDocumentCardState extends State<_PreviousDocumentCard> {
 
 // ============================================================================
 // _PreviousDocPreviewArea — Show preview of previously uploaded image
+// Now uses RefreshableKycImageDisplay for automatic URL expiry handling
 // ============================================================================
 
-class _PreviousDocPreviewArea extends StatelessWidget {
+class _PreviousDocPreviewArea extends StatefulWidget {
   const _PreviousDocPreviewArea({
     required this.downloadUrl,
+    required this.docType,
     required this.accentColor,
+    required this.imageUrlProvider,
   });
 
   final String downloadUrl;
+  final String docType;
   final Color accentColor;
+  final KycImageUrlProvider imageUrlProvider;
 
   @override
+  State<_PreviousDocPreviewArea> createState() =>
+      _PreviousDocPreviewAreaState();
+}
+
+class _PreviousDocPreviewAreaState extends State<_PreviousDocPreviewArea> {
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        _openFullPreview(context);
-      },
-      child: Container(
-        height: 140,
-        width: double.infinity,
-        color: Colors.grey[100],
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Image
-            _buildPreviewImage(),
-            // Overlay hint
-            Positioned(
-              bottom: 8,
-              right: 8,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  color: Colors.black38,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.open_in_full_rounded,
-                          size: 12, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        'View',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPreviewImage() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.network(
-        downloadUrl,
-        fit: BoxFit.cover,
-        cacheHeight: 180,
-        cacheWidth: 500,
-        headers: const {
-          'Accept': 'image/*',
-        },
-        errorBuilder: (context, error, stackTrace) {
-          debugPrint('❌ Image load failed for: ${downloadUrl.substring(0, 80)}...');
-          debugPrint('   Error: $error');
-          return Container(
-            color: Colors.grey[200],
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.image_not_supported_outlined, 
-                  size: 40, 
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Failed to load image',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-        loadingBuilder: (context, child, progress) {
-          if (progress == null) {
-            debugPrint('✅ Image loaded successfully');
-            return child;
-          }
-          
-          return Container(
-            color: Colors.grey[200],
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      value: progress.expectedTotalBytes != null
-                          ? progress.cumulativeBytesLoaded /
-                              progress.expectedTotalBytes!
-                          : null,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        accentColor.withValues(alpha: 0.7),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Loading...',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _openFullPreview(BuildContext context) {
-    Navigator.of(context).push(
-      PageRouteBuilder<void>(
-        opaque: false,
-        barrierColor: Colors.black87,
-        barrierDismissible: true,
-        pageBuilder: (_, anim, __) => FadeTransition(
-          opacity: anim,
-          child: _FullScreenDocumentViewer(
-            downloadUrl: downloadUrl,
-          ),
-        ),
-      ),
+    return RefreshableKycImageDisplay(
+      downloadUrl: widget.downloadUrl,
+      docType: widget.docType,
+      height: 140,
+      width: double.infinity,
+      onRefreshUrl: () =>
+          widget.imageUrlProvider.refreshImageUrl(widget.docType),
     );
   }
 }
