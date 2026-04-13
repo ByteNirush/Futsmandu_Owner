@@ -383,10 +383,15 @@ class OwnerRegistrationResult {
 }
 
 class OwnerLoginResult {
-  const OwnerLoginResult({required this.accessToken, required this.owner});
+  const OwnerLoginResult({
+    required this.accessToken,
+    required this.owner,
+    this.refreshToken,
+  });
 
   final String accessToken;
   final Owner owner;
+  final String? refreshToken;
 }
 
 class OtpVerificationResult {

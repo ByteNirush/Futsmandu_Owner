@@ -51,6 +51,12 @@ class OwnerAuthRepository {
     final hydratedOwner = await _hydrateOwnerWithLocalKyc(result.owner);
 
     await _sessionStore.saveAccessToken(result.accessToken);
+    
+    // Save refresh token if available
+    if (result.refreshToken != null && result.refreshToken!.isNotEmpty) {
+      await _sessionStore.saveRefreshToken(result.refreshToken!);
+    }
+    
     await _sessionStore.saveOwner(hydratedOwner);
     return hydratedOwner;
   }

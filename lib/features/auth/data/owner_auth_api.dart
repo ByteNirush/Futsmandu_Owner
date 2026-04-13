@@ -72,6 +72,8 @@ class OwnerAuthApi {
 
     final accessToken = result['accessToken'];
     final owner = result['owner'];
+    final refreshToken = result['refreshToken'];
+    
     if (accessToken is! String ||
         accessToken.isEmpty ||
         owner is! Map<String, dynamic>) {
@@ -81,6 +83,7 @@ class OwnerAuthApi {
     return OwnerLoginResult(
       accessToken: accessToken,
       owner: Owner.fromApiJson(owner),
+      refreshToken: refreshToken is String ? refreshToken : null,
     );
   }
 

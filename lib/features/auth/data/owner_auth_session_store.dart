@@ -28,6 +28,12 @@ class OwnerAuthSessionStore {
 
   Future<void> deleteAccessToken() => _tokenManager.deleteAccessToken();
 
+  Future<void> saveRefreshToken(String token) => _tokenManager.saveRefreshToken(token);
+
+  Future<String?> getRefreshToken() => _tokenManager.getRefreshToken();
+
+  Future<void> deleteRefreshToken() => _tokenManager.deleteRefreshToken();
+
   Future<void> saveOwner(Owner owner) async {
     final prefs = await _prefs();
     await prefs.setString(_ownerProfileKey, jsonEncode(owner.toStorageJson()));

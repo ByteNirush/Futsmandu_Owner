@@ -235,4 +235,9 @@ class MediaUploadService {
       return const MediaAssetStatusResponse(status: 'processing');
     }
   }
+
+  /// Fetch all previously uploaded KYC documents for the owner
+  Future<FetchKycDocumentsResponse> fetchAllKycDocuments() async {
+    return _mediaApi.fetchAllKycDocuments();
+  }
 }
