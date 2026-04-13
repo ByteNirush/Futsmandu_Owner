@@ -177,7 +177,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         docType: _parseDocType(docType),
         bytes: bytes,
         contentType: _guessContentType(selected.name),
-        pollUntilReady: false, // Don't wait for processing, show immediately
+        pollUntilReady: true, // ✅ Wait for processing so image appears in API list
       );
 
       if (!mounted) return;
