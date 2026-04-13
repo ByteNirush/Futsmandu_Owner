@@ -9,6 +9,8 @@ import '../../../../core/errors/app_failure.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_input_field.dart';
+import '../../../media/presentation/widgets/venue_image_upload_widget.dart';
+import '../../../media/presentation/widgets/venue_image_gallery_widget.dart';
 import '../../data/venue_image_upload_service.dart';
 import '../../domain/models/venue_models.dart';
 import '../controllers/venue_form_controller.dart';
@@ -49,12 +51,21 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
 
   final List<String> _amenities = [];
 
-  bool _isUploadingImage = false;
-  double _imageUploadProgress = 0;
-  String? _imageUploadStatusMessage;
-  String? _uploadedAssetId;
-  String? _selectedImagePath;
-  String? _selectedImageName;
+  // Cover image
+  bool _isUploadingCoverImage = false;
+  double _coverImageUploadProgress = 0;
+  String? _coverImageUploadStatusMessage;
+  String? _uploadedCoverImageAssetId;
+  String? _selectedCoverImagePath;
+  String? _selectedCoverImageName;
+  String? _uploadedCoverImageUrl;
+
+  // Gallery images
+  final List<String> _galleryImages = [];
+  bool _isUploadingGalleryImage = false;
+  double _galleryImageUploadProgress = 0;
+  String? _galleryImageUploadStatusMessage;
+
   Venue? _savedVenue;
 
   @override
@@ -75,6 +86,11 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     _partialRefundHoursController.text = venue.partialRefundHours.toString();
     _partialRefundPctController.text = venue.partialRefundPct.toString();
     _amenities.addAll(venue.amenities);
+    
+    // Set cover image if exists
+    if (venue.imageUrl != null && venue.imageUrl!.isNotEmpty) {
+      _uploadedCoverImageUrl = venue.imageUrl;
+    }
   }
 
   @override
@@ -109,19 +125,88 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     setState(() => _amenities.remove(amenity));
   }
 
-  Future<void> _pickImage() async {
-    final picked = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 86,
-    );
-    if (picked == null || !mounted) return;
+  Future<void> _pickCoverImage(XFile pickedFile) async {
+    setState(() {
+      _selectedCoverImagePath = pickedFile.path;
+      _selectedCoverImageName = pickedFile.name;
+      _coverImageUploadProgress = 0;
+      _coverImageUploadStatusMessage = null;
+    });
+  }
+
+  Future<void> _pickGalleryImage(XFile pickedFile) async {
+    if (_galleryImages.length >= 10) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum 10 gallery images allowed'),
+        ),
+      );
+      return;
+    }
+
+    final imageFile = File(pickedFile.path);
+    if (!await imageFile.exists()) {
+      throw AppFailure('Selected image file does not exist.');
+    }
+
+    final bytes = await imageFile.readAsBytes();
+    final contentType = _guessContentType(pickedFile.name);
 
     setState(() {
-      _selectedImagePath = picked.path;
-      _selectedImageName = picked.name;
-      _imageUploadProgress = 0;
-      _imageUploadStatusMessage = null;
+      _isUploadingGalleryImage = true;
+      _galleryImageUploadProgress = 0;
+      _galleryImageUploadStatusMessage = 'Uploading gallery image...';
     });
+
+    try {
+      final venueId = _savedVenue?.id;
+      if (venueId == null || venueId.isEmpty) {
+        throw AppFailure('Please save venue first before adding gallery images');
+      }
+
+      final result = await _imageUploadService.uploadVenueGalleryImage(
+        venueId: venueId,
+        contentType: contentType,
+        bytes: bytes,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() => _galleryImageUploadProgress = progress);
+        },
+        onStatusMessage: (message) {
+          if (!mounted) return;
+          setState(() => _galleryImageUploadStatusMessage = message);
+        },
+        pollUntilReady: true,
+      );
+
+      final uploadedUrl = result.imageUrl;
+      if (uploadedUrl != null && uploadedUrl.trim().isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _galleryImages.add(uploadedUrl);
+          _galleryImageUploadStatusMessage = 'Gallery image added successfully!';
+        });
+
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() => _galleryImageUploadStatusMessage = null);
+          }
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+      final normalizedError = error.toString().replaceFirst('Exception: ', '');
+      setState(() {
+        _galleryImageUploadStatusMessage = normalizedError.isNotEmpty
+            ? normalizedError
+            : 'Failed to upload gallery image';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingGalleryImage = false);
+      }
+    }
   }
 
   String _guessContentType(String fileName) {
@@ -132,21 +217,23 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     return 'image/jpeg';
   }
 
-  Future<void> _uploadImageForVenue(String venueId) async {
-    if (_selectedImagePath == null || _selectedImageName == null) return;
+  Future<void> _uploadCoverImageForVenue(String venueId) async {
+    if (_selectedCoverImagePath == null || _selectedCoverImageName == null) {
+      return;
+    }
 
-    final imageFile = File(_selectedImagePath!);
+    final imageFile = File(_selectedCoverImagePath!);
     if (!await imageFile.exists()) {
       throw AppFailure('Selected image file does not exist.');
     }
 
     final bytes = await imageFile.readAsBytes();
-    final contentType = _guessContentType(_selectedImageName!);
+    final contentType = _guessContentType(_selectedCoverImageName!);
 
     setState(() {
-      _isUploadingImage = true;
-      _imageUploadProgress = 0;
-      _imageUploadStatusMessage = 'Preparing image upload...';
+      _isUploadingCoverImage = true;
+      _coverImageUploadProgress = 0;
+      _coverImageUploadStatusMessage = 'Preparing cover image upload...';
     });
 
     try {
@@ -156,17 +243,17 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
         bytes: bytes,
         onProgress: (progress) {
           if (!mounted) return;
-          setState(() => _imageUploadProgress = progress);
+          setState(() => _coverImageUploadProgress = progress);
         },
         onStatusMessage: (message) {
           if (!mounted) return;
-          setState(() => _imageUploadStatusMessage = message);
+          setState(() => _coverImageUploadStatusMessage = message);
         },
         pollUntilReady: true,
       );
 
       final currentVenue = _savedVenue;
-      _uploadedAssetId = result.assetId;
+      _uploadedCoverImageAssetId = result.assetId;
 
       final uploadedUrl = result.imageUrl;
       if (uploadedUrl != null && uploadedUrl.trim().isNotEmpty &&
@@ -187,10 +274,17 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
           isVerified: currentVenue.isVerified,
           isActive: currentVenue.isActive,
         );
+
+        if (!mounted) return;
+        setState(() {
+          _uploadedCoverImageUrl = uploadedUrl;
+          _selectedCoverImagePath = null;
+          _selectedCoverImageName = null;
+        });
       }
     } finally {
       if (mounted) {
-        setState(() => _isUploadingImage = false);
+        setState(() => _isUploadingCoverImage = false);
       }
     }
   }
@@ -228,8 +322,8 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
 
       _savedVenue = result;
 
-      if (result != null && _selectedImagePath != null) {
-        await _uploadImageForVenue(result.id);
+      if (result != null && _selectedCoverImagePath != null) {
+        await _uploadCoverImageForVenue(result.id);
       }
 
       if (!mounted) return;
@@ -510,61 +604,84 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     );
   }
 
-  Widget _mediaSection(BuildContext context) {
+  Widget _coverImageSection(BuildContext context) {
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader(context, 'Venue Image'),
+          _sectionHeader(context, 'Cover Image'),
+          VenueImageUploadWidget(
+            label: 'Venue Cover Image',
+            hint: 'Upload a high-quality cover image for your venue',
+            selectedImagePath: _selectedCoverImagePath,
+            uploadedImageUrl: _uploadedCoverImageUrl,
+            isUploading: _isUploadingCoverImage,
+            uploadProgress: _coverImageUploadProgress,
+            uploadStatusMessage: _coverImageUploadStatusMessage,
+            onImageSelected: (file) => _pickCoverImage(file),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _galleryImagesSection(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(context, 'Gallery Images'),
           Text(
-            'Image is uploaded securely via pre-signed URL after venue save.',
+            'Add up to 10 images to showcase your venue (${_galleryImages.length}/10)',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton.icon(
-            onPressed:
-                (_formController.isSubmitting || _isUploadingImage)
-                    ? null
-                    : _pickImage,
-            icon: const Icon(Icons.photo_library_outlined),
-            label: Text(
-              _selectedImageName == null ? 'Choose Image' : 'Change Image',
-            ),
+            onPressed: _savedVenue == null || _isUploadingGalleryImage
+                ? null
+                : () async {
+                    final picked = await _imagePicker.pickImage(
+                      source: ImageSource.gallery,
+                      imageQuality: 85,
+                    );
+                    if (picked != null) {
+                      await _pickGalleryImage(picked);
+                    }
+                  },
+            icon: const Icon(Icons.add_photo_alternate_outlined),
+            label: const Text('Add Gallery Image'),
           ),
-          if (_selectedImageName != null) ...[
-            const SizedBox(height: AppSpacing.xs),
+          if (_galleryImageUploadStatusMessage != null) ...[
+            const SizedBox(height: AppSpacing.sm),
             Text(
-              _selectedImageName!,
+              _galleryImageUploadStatusMessage!,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
-          if (_isUploadingImage) ...[
-            const SizedBox(height: AppSpacing.sm),
-            LinearProgressIndicator(value: _imageUploadProgress),
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              'Uploading image ${(_imageUploadProgress * 100).toStringAsFixed(0)}%',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            if (_imageUploadStatusMessage != null) ...[
-              const SizedBox(height: AppSpacing.xxs),
-              Text(
-                _imageUploadStatusMessage!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ] else if (_imageUploadStatusMessage != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _imageUploadStatusMessage!,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-          if (_uploadedAssetId != null) ...[
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              'Asset ID: $_uploadedAssetId',
-              style: Theme.of(context).textTheme.bodySmall,
+          if (_galleryImages.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            VenueImageGalleryWidget(
+              label: 'Uploaded Images',
+              galleryImages: _galleryImages,
+              onImageTap: (index, imageUrl) {
+                showDialog(
+                  context: context,
+                  builder: (_) => Dialog(
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: InteractiveViewer(
+                        child: Image.network(imageUrl),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              onDeleteImage: (index) {
+                setState(() => _galleryImages.removeAt(index));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Gallery image removed')),
+                );
+              },
             ),
           ],
         ],
@@ -581,7 +698,9 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     return AnimatedBuilder(
       animation: _formController,
       builder: (context, _) {
-        final busy = _formController.isSubmitting || _isUploadingImage;
+        final busy = _formController.isSubmitting ||
+            _isUploadingCoverImage ||
+            _isUploadingGalleryImage;
 
         return Scaffold(
           appBar: AppBar(
@@ -626,7 +745,10 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
                 const SizedBox(height: AppSpacing.md),
                 _refundSection(context),
                 const SizedBox(height: AppSpacing.md),
-                _mediaSection(context),
+                _coverImageSection(context),
+                const SizedBox(height: AppSpacing.md),
+                if (_savedVenue != null) _galleryImagesSection(context),
+                if (_savedVenue != null) const SizedBox(height: AppSpacing.md),
                 const SizedBox(height: AppSpacing.md),
 
                 // ── Submit button ─────────────────────────────────────────
