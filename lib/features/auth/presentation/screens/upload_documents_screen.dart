@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/design_system/app_spacing.dart';
 import '../../../media/controller/media_upload_controller.dart';
 import '../../../media/model/media_upload_models.dart';
 import '../../../media/presentation/widgets/media_upload_tile.dart';
@@ -55,7 +52,6 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
   String? _ownerId;
   bool _isSubmitting = false;
   List<KycDocumentItem> _previousUploadedDocs = [];
-  bool _isLoadingPrevious = false;
 
   static const _docs = [
     _KycDocInfo(
@@ -129,7 +125,6 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
 
   Future<void> _loadPreviouslyUploadedDocuments() async {
     if (!mounted) return;
-    setState(() => _isLoadingPrevious = true);
     try {
       final response = await _mediaController.fetchAllKycDocuments();
       if (!mounted) return;
@@ -141,12 +136,10 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
       
       setState(() {
         _previousUploadedDocs = response.documents;
-        _isLoadingPrevious = false;
       });
     } catch (e) {
       if (!mounted) return;
       debugPrint('❌ Failed to fetch previous documents: $e');
-      setState(() => _isLoadingPrevious = false);
     }
   }
 
@@ -899,88 +892,6 @@ class _PreviousDocPreviewAreaState extends State<_PreviousDocPreviewArea> {
       width: double.infinity,
       onRefreshUrl: () =>
           widget.imageUrlProvider.refreshImageUrl(widget.docType),
-    );
-  }
-}
-
-// ============================================================================
-// _FullScreenDocumentViewer — Full-screen image preview
-// ============================================================================
-
-class _FullScreenDocumentViewer extends StatelessWidget {
-  const _FullScreenDocumentViewer({required this.downloadUrl});
-  final String downloadUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black87,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        automaticallyImplyLeading: true,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          panEnabled: true,
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image.network(
-            downloadUrl,
-            fit: BoxFit.contain,
-            headers: const {
-              'Accept': 'image/*',
-            },
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('❌ Full-screen image load failed: $error');
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 60,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Failed to load image',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ],
-              );
-            },
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        value: progress.expectedTotalBytes != null
-                            ? progress.cumulativeBytesLoaded /
-                                progress.expectedTotalBytes!
-                            : null,
-                        valueColor:
-                            const AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Loading image...',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
     );
   }
 }
