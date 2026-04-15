@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -192,7 +191,7 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: _progress),
                   duration: const Duration(milliseconds: 200),
-                  builder: (_, val, __) => CircularProgressIndicator(
+                  builder: (_, val, _) => CircularProgressIndicator(
                     value: _progress > 0 ? val : null,
                     strokeWidth: 3,
                     backgroundColor: Colors.transparent,
@@ -252,7 +251,7 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
         fit: BoxFit.cover,
         width: size,
         height: size,
-        errorBuilder: (_, __, ___) =>
+        errorBuilder: (_, _, _) =>
             _buildInitials(size, Theme.of(context).colorScheme, const Color(0xFF00C896)),
       );
     }
