@@ -40,7 +40,6 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _streetController = TextEditingController();
-  final _cityController = TextEditingController();
   final _districtController = TextEditingController();
   final _latitudeController = TextEditingController();
   final _longitudeController = TextEditingController();
@@ -51,11 +50,19 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
 
   final List<String> _amenities = [];
 
+  // Available cities for dropdown
+  static const List<String> _cities = [
+    'Kathmandu',
+    'Lalitpur',
+    'Bhaktapur',
+  ];
+
+  String? _selectedCity;
+
   // Cover image
   bool _isUploadingCoverImage = false;
   double _coverImageUploadProgress = 0;
   String? _coverImageUploadStatusMessage;
-  String? _uploadedCoverImageAssetId;
   String? _selectedCoverImagePath;
   String? _selectedCoverImageName;
   String? _uploadedCoverImageUrl;
@@ -63,7 +70,6 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
   // Gallery images
   final List<String> _galleryImages = [];
   bool _isUploadingGalleryImage = false;
-  double _galleryImageUploadProgress = 0;
   String? _galleryImageUploadStatusMessage;
 
   Venue? _savedVenue;
@@ -78,7 +84,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     _nameController.text = venue.name;
     _descriptionController.text = venue.description;
     _streetController.text = venue.address.street;
-    _cityController.text = venue.address.city;
+    _selectedCity = venue.address.city.isNotEmpty ? venue.address.city : null;
     _districtController.text = venue.address.district;
     _latitudeController.text = venue.latitude.toString();
     _longitudeController.text = venue.longitude.toString();
@@ -99,7 +105,6 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _streetController.dispose();
-    _cityController.dispose();
     _districtController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
@@ -155,7 +160,6 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
 
     setState(() {
       _isUploadingGalleryImage = true;
-      _galleryImageUploadProgress = 0;
       _galleryImageUploadStatusMessage = 'Uploading gallery image...';
     });
 
@@ -169,10 +173,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
         venueId: venueId,
         contentType: contentType,
         bytes: bytes,
-        onProgress: (progress) {
-          if (!mounted) return;
-          setState(() => _galleryImageUploadProgress = progress);
-        },
+        onProgress: (_) {},
         onStatusMessage: (message) {
           if (!mounted) return;
           setState(() => _galleryImageUploadStatusMessage = message);
@@ -253,8 +254,6 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
       );
 
       final currentVenue = _savedVenue;
-      _uploadedCoverImageAssetId = result.assetId;
-
       final uploadedUrl = result.imageUrl;
       if (uploadedUrl != null && uploadedUrl.trim().isNotEmpty &&
           currentVenue != null) {
@@ -295,7 +294,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
       description: _descriptionController.text.trim(),
       address: VenueAddress(
         street: _streetController.text.trim(),
-        city: _cityController.text.trim(),
+        city: _selectedCity ?? '',
         district: _districtController.text.trim(),
       ),
       latitude: double.parse(_latitudeController.text.trim()),
@@ -423,14 +422,33 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: AppSpacing.sm),
-          AppInputField(
-            label: 'City',
-            hint: 'City',
-            prefixIcon: Icons.location_city_outlined,
-            controller: _cityController,
-            validator: (value) =>
-                OwnerFormValidators.requiredText(value, 'City'),
-            textInputAction: TextInputAction.next,
+          DropdownButtonFormField<String>(
+            value: _selectedCity,
+            hint: const Text('Select City'),
+            decoration: InputDecoration(
+              labelText: 'City',
+              prefixIcon: const Icon(Icons.location_city_outlined),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            items: _cities.map((city) {
+              return DropdownMenuItem<String>(
+                value: city,
+                child: Text(city),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedCity = value;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'City is required';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: AppSpacing.sm),
           AppInputField(
