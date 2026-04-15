@@ -110,7 +110,7 @@ class _MediaUploadTileState extends State<MediaUploadTile>
         opaque: false,
         barrierColor: Colors.black87,
         barrierDismissible: true,
-        pageBuilder: (_, anim, __) => FadeTransition(
+        pageBuilder: (_, anim, _) => FadeTransition(
           opacity: anim,
           child: _FullScreenImageViewer(
             localImagePath: widget.localImagePath,
@@ -370,7 +370,7 @@ class _PreviewArea extends StatelessWidget {
       return Image.file(
         File(localImagePath!),
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _fallbackImage(),
+        errorBuilder: (_, _, _) => _fallbackImage(),
       );
     }
     return UploadedImageDisplay(
