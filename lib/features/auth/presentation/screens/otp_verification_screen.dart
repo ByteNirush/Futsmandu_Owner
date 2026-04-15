@@ -22,7 +22,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   String _flow = 'owner-auth';
   String? _nextRoute;
-  String? _phone;
   String? _ownerId;
 
   bool get _isOwnerAuthFlow => _flow == 'owner-auth';
@@ -34,7 +33,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (args is Map<String, dynamic>) {
       _flow = args['flow']?.toString() ?? _flow;
       _nextRoute = args['nextRoute']?.toString();
-      _phone = args['phone']?.toString();
       _ownerId = args['ownerId']?.toString();
       final email = args['email']?.toString();
       if (email != null && email.isNotEmpty) {
