@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../media/controller/media_upload_controller.dart';
-import '../../../media/model/media_upload_models.dart';
 import '../../../media/presentation/widgets/media_upload_tile.dart';
 import '../../../media/presentation/widgets/uploaded_image_display.dart';
 import '../../../media/service/media_upload_service.dart';
@@ -47,7 +46,6 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
   String? _status;
   String? _localPath;
   String? _uploadedAssetId;
-  String? _uploadedCdnUrl;
   late AnimationController _checkAnim;
   late Animation<double> _checkScale;
 
@@ -109,7 +107,6 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
         _state = UploadTileState.done;
         _progress = 1.0;
         _uploadedAssetId = result.assetId;
-        _uploadedCdnUrl = result.cdnUrl;
       });
 
       _checkAnim.forward(from: 0);
@@ -166,7 +163,7 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
               if (_hasImage)
                 _localPath != null
                     ? Image.file(File(_localPath!), fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _Placeholder(accent: accent))
+                        errorBuilder: (_, _, _) => _Placeholder(accent: accent))
                     : UploadedImageDisplay(
                         assetId: _uploadedAssetId,
                         image: widget.initialImageUrl,
