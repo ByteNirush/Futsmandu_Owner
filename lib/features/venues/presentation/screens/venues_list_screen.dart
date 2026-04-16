@@ -3,6 +3,8 @@ import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_radius.dart';
+import '../../../../core/design_system/app_shadows.dart';
 import '../../../../shared/widgets/app_extended_action_button.dart';
 import '../../../../shared/widgets/safe_network_image.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
@@ -129,340 +131,313 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
                 const SizedBox(height: AppSpacing.sm),
             itemBuilder: (context, index) {
               final venue = _controller.venues[index];
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () async {
-                    final changed = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(
-                        builder: (_) => VenueDetailsScreen(venue: venue),
-                      ),
-                    );
-                    if (changed == true && mounted) {
-                      await _controller.reloadAfterMutation();
-                    }
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 2),
-                          spreadRadius: 0,
+              return Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  boxShadow: AppShadows.card(colorScheme),
+                ),
+                child: Material(
+                  color: colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  surfaceTintColor: Colors.transparent,
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () async {
+                      final changed = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => VenueDetailsScreen(venue: venue),
                         ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header with image, name, address, and edit button
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.08),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 1),
-                                    ),
+                      );
+                      if (changed == true && mounted) {
+                        await _controller.reloadAfterMutation();
+                      }
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Premium Image banner
+                        Stack(
+                          children: [
+                            Container(
+                              height: 160,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    colorScheme.primaryContainer.withValues(alpha: 0.6),
+                                    colorScheme.tertiaryContainer.withValues(alpha: 0.3),
                                   ],
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    width: 70,
-                                    height: 70,
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primaryContainer,
+                              ),
+                              child: venue.imageUrl != null
+                                  ? SafeNetworkImage(
+                                      url: venue.imageUrl!,
+                                      width: double.infinity,
+                                      height: 160,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Center(
+                                      child: Icon(
+                                        Icons.sports_soccer_rounded,
+                                        color: colorScheme.primary.withValues(alpha: 0.3),
+                                        size: 64,
+                                      ),
                                     ),
-                                    child: venue.imageUrl != null
-                                        ? SafeNetworkImage(
-                                            url: venue.imageUrl!,
-                                            width: 70,
-                                            height: 70,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Center(
-                                            child: Icon(
-                                              Icons.sports_soccer_rounded,
-                                              color: colorScheme.primary,
-                                              size: 36,
-                                            ),
-                                          ),
+                            ),
+                            // Subtle overlay gradient at the top right to make the edit button pop
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topRight,
+                                    end: Alignment.bottomLeft,
+                                    colors: [
+                                      Colors.black.withValues(alpha: 0.2),
+                                      Colors.transparent,
+                                    ],
+                                    stops: const [0.0, 0.4],
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
+                            ),
+                            Positioned(
+                              top: AppSpacing.sm,
+                              right: AppSpacing.sm,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: colorScheme.surface,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  shape: const CircleBorder(),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: IconButton(
+                                    onPressed: () => _openEditVenue(venue),
+                                    icon: const Icon(Icons.edit_rounded),
+                                    color: colorScheme.onSurface,
+                                    splashColor: colorScheme.primary.withValues(alpha: 0.1),
+                                    highlightColor: colorScheme.primary.withValues(alpha: 0.05),
+                                    splashRadius: 24,
+                                    padding: const EdgeInsets.all(AppSpacing.xs),
+                                    constraints: const BoxConstraints(),
+                                    iconSize: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        // Content area
+                        Padding(
+                          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                venue.name,
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: AppFontWeights.bold,
+                                      letterSpacing: -0.5,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: AppSpacing.xxs),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on_rounded,
+                                    size: 16,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: AppSpacing.xxs),
+                                  Expanded(
+                                    child: Text(
+                                      venue.displayAddress,
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                            height: 1.2,
+                                          ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: AppSpacing.md),
+                              
+                              // Badges section wrapped for better responsiveness
+                              Wrap(
+                                spacing: AppSpacing.xs,
+                                runSpacing: AppSpacing.xs,
+                                children: [
+                                  // Verification status
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.sm,
+                                      vertical: AppSpacing.xs,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: venue.isVerified
+                                          ? AppColors.success.withValues(alpha: 0.12)
+                                          : AppColors.warning.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                        Icon(
+                                          venue.isVerified
+                                              ? Icons.verified_rounded
+                                              : Icons.info_rounded,
+                                          size: 16,
+                                          color: venue.isVerified
+                                              ? AppColors.success
+                                              : AppColors.warning,
+                                        ),
+                                        const SizedBox(width: AppSpacing.xxs),
+                                        Text(
+                                          venue.isVerified
+                                              ? 'Verified'
+                                              : 'Pending Verification',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: venue.isVerified
+                                                    ? AppColors.success
+                                                    : AppColors.warning,
+                                                letterSpacing: 0,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // Active status
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.sm,
+                                      vertical: AppSpacing.xs,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: venue.isActive
+                                          ? colorScheme.secondary.withValues(alpha: 0.12)
+                                          : colorScheme.outline.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          venue.isActive
+                                              ? Icons.check_circle_rounded
+                                              : Icons.cancel_rounded,
+                                          size: 16,
+                                          color: venue.isActive
+                                              ? colorScheme.secondary
+                                              : colorScheme.outline,
+                                        ),
+                                        const SizedBox(width: AppSpacing.xxs),
+                                        Text(
+                                          venue.isActive ? 'Active' : 'Inactive',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: venue.isActive
+                                                    ? colorScheme.secondary
+                                                    : colorScheme.outline,
+                                                letterSpacing: 0,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // Courts count
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.sm,
+                                      vertical: AppSpacing.xs,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.tertiary.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.sports_soccer_rounded,
+                                          size: 16,
+                                          color: colorScheme.tertiary,
+                                        ),
+                                        const SizedBox(width: AppSpacing.xxs),
+                                        Text(
+                                          '${venue.courtsCount} court${venue.courtsCount == 1 ? '' : 's'}',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: colorScheme.tertiary,
+                                                letterSpacing: 0,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              
+                              // Amenities section
+                              if (venue.amenities.isNotEmpty) ...[
+                                const SizedBox(height: AppSpacing.md),
+                                Wrap(
+                                  spacing: AppSpacing.xs,
+                                  runSpacing: AppSpacing.xs,
+                                  children: venue.amenities
+                                      .take(4)
+                                      .map(
+                                        (amenity) => Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.sm,
+                                            vertical: AppSpacing.xs,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                            borderRadius: BorderRadius.circular(20), // Pill shape for amenities
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
+                                              Icon(
+                                                _getAmenityIcon(amenity),
+                                                size: 14,
+                                                color: colorScheme.onSurfaceVariant,
+                                              ),
+                                              const SizedBox(width: AppSpacing.xxs),
                                               Text(
-                                                venue.name,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleLarge
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          AppFontWeights.bold,
+                                                amenity,
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                      color: colorScheme.onSurfaceVariant,
                                                     ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(
-                                                height: AppSpacing.xxs,
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.location_on_rounded,
-                                                    size: 13,
-                                                    color: colorScheme
-                                                        .onSurfaceVariant,
-                                                  ),
-                                                  const SizedBox(
-                                                    width: AppSpacing.xxs,
-                                                  ),
-                                                  Expanded(
-                                                    child: Text(
-                                                      venue.displayAddress,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodyMedium
-                                                          ?.copyWith(
-                                                            color: colorScheme
-                                                                .onSurfaceVariant,
-                                                          ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
                                               ),
                                             ],
                                           ),
                                         ),
-                                        IconButton(
-                                          onPressed: () =>
-                                              _openEditVenue(venue),
-                                          icon: const Icon(
-                                            Icons.edit_rounded,
-                                          ),
-                                          splashRadius: 20,
-                                          padding: const EdgeInsets.all(
-                                              AppSpacing.xxs),
-                                          iconSize: 20,
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          
-                          // Divider
-                          const SizedBox(height: AppSpacing.sm),
-                          Divider(
-                            height: 1,
-                            color: colorScheme.outline.withValues(alpha: 0.2),
-                          ),
-                          
-                          // Verification status
-                          const SizedBox(height: AppSpacing.sm),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.xs,
-                              vertical: AppSpacing.xxs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: venue.isVerified
-                                  ? AppColors.success.withValues(alpha: 0.12)
-                                  : AppColors.warning.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  venue.isVerified
-                                      ? Icons.verified_rounded
-                                      : Icons.info_rounded,
-                                  size: 16,
-                                  color: venue.isVerified
-                                      ? AppColors.success
-                                      : AppColors.warning,
-                                ),
-                                const SizedBox(width: AppSpacing.xxs),
-                                Text(
-                                  venue.isVerified
-                                      ? 'Verified'
-                                      : 'Pending Verification',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelLarge
-                                      ?.copyWith(
-                                        color: venue.isVerified
-                                            ? AppColors.success
-                                            : AppColors.warning,
-                                      ),
+                                      )
+                                      .toList(growable: false),
                                 ),
                               ],
-                            ),
-                          ),
-                          
-                          // Status and courts row
-                          const SizedBox(height: AppSpacing.xs),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.xs,
-                                  vertical: AppSpacing.xxs,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: venue.isActive
-                                      ? colorScheme.secondary
-                                          .withValues(alpha: 0.12)
-                                      : colorScheme.outline
-                                          .withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      venue.isActive
-                                          ? Icons.check_circle_rounded
-                                          : Icons.cancel_rounded,
-                                      size: 14,
-                                      color: venue.isActive
-                                          ? colorScheme.secondary
-                                          : colorScheme.outline,
-                                    ),
-                                    const SizedBox(width: AppSpacing.xxs),
-                                    Text(
-                                      venue.isActive ? 'Active' : 'Inactive',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge
-                                          ?.copyWith(
-                                            color: venue.isActive
-                                                ? colorScheme.secondary
-                                                : colorScheme.outline,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.xs),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.xs,
-                                  vertical: AppSpacing.xxs,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.tertiary
-                                      .withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.sports_soccer_rounded,
-                                      size: 14,
-                                      color: colorScheme.tertiary,
-                                    ),
-                                    const SizedBox(width: AppSpacing.xxs),
-                                    Text(
-                                      '${venue.courtsCount} court${venue.courtsCount == 1 ? '' : 's'}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge
-                                          ?.copyWith(
-                                            color: colorScheme.tertiary,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ],
                           ),
-                          
-                          // Amenities section
-                          if (venue.amenities.isNotEmpty) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Wrap(
-                              spacing: AppSpacing.xs,
-                              runSpacing: AppSpacing.xs,
-                              children: venue.amenities
-                                  .take(4)
-                                  .map(
-                                    (amenity) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.xs,
-                                        vertical: AppSpacing.xxs,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.onSurface
-                                            .withValues(alpha: 0.06),
-                                        borderRadius:
-                                            BorderRadius.circular(6),
-                                        border: Border.all(
-                                          color: colorScheme.outline
-                                              .withValues(alpha: 0.1),
-                                          width: 0.5,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            _getAmenityIcon(amenity),
-                                            size: 12,
-                                            color: colorScheme
-                                                .onSurfaceVariant,
-                                          ),
-                                          const SizedBox(
-                                            width: AppSpacing.xxs,
-                                          ),
-                                          Text(
-                                            amenity,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .labelMedium
-                                                ?.copyWith(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                  .toList(growable: false),
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
