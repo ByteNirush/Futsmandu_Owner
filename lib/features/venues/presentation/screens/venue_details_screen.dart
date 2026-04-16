@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
+import '../../../../core/design_system/app_spacing.dart';
+import '../../../../core/design_system/app_radius.dart';
+import '../../../../core/design_system/app_shadows.dart';
 import '../../../../shared/widgets/safe_network_image.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../courts/presentation/screens/create_court_screen.dart';
@@ -355,24 +358,24 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
                 leading: Container(
                   margin: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: colorScheme.surface.withValues(alpha: 0.75),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    icon: Icon(Icons.arrow_back_rounded, color: colorScheme.onSurface),
                   ),
                 ),
                 actions: [
                   Container(
                     margin: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.4),
+                      color: colorScheme.surface.withValues(alpha: 0.75),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
                       onPressed: _openEditVenue,
-                      icon: const Icon(Icons.edit_rounded, color: Colors.white),
+                      icon: Icon(Icons.edit_rounded, color: colorScheme.onSurface),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -390,50 +393,95 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
                       children: [
                         // Description Section
                         if (widget.venue.description.isNotEmpty) ...[
-                          _SectionTitle(title: 'About'),
-                          const SizedBox(height: 12),
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                            width: double.infinity,
                             decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(16),
+                              color: colorScheme.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
                             ),
-                            child: Text(
-                              widget.venue.description,
-                              style: textTheme.bodyMedium?.copyWith(
-                                height: 1,
-                                color: colorScheme.onSurface,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const _SectionTitle(title: 'About'),
+                                const SizedBox(height: AppSpacing.sm),
+                                Text(
+                                  widget.venue.description,
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    height: 1.5,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.md),
                         ],
 
                         // Location Section
-                        _SectionTitle(title: 'Location'),
-                        const SizedBox(height: 12),
-                        _LocationCard(venue: widget.venue),
-                        const SizedBox(height: 24),
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _SectionTitle(title: 'Location'),
+                              const SizedBox(height: AppSpacing.sm),
+                              _LocationCard(venue: widget.venue),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
 
                         // Amenities Section
                         if (widget.venue.amenities.isNotEmpty) ...[
-                          _SectionTitle(title: 'Amenities'),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: widget.venue.amenities.map((amenity) {
-                              return _AmenityChip(amenity: amenity);
-                            }).toList(),
+                          Container(
+                            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerLow,
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const _SectionTitle(title: 'Amenities'),
+                                const SizedBox(height: AppSpacing.sm),
+                                Wrap(
+                                  spacing: AppSpacing.xs2,
+                                  runSpacing: AppSpacing.xs2,
+                                  children: widget.venue.amenities.map((amenity) {
+                                    return _AmenityChip(amenity: amenity);
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.md),
                         ],
 
                         // Status Section
-                        _SectionTitle(title: 'Status'),
-                        const SizedBox(height: 12),
-                        _StatusGrid(venue: widget.venue),
-                        const SizedBox(height: 32),
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLow,
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const _SectionTitle(title: 'Status'),
+                              const SizedBox(height: AppSpacing.sm),
+                              _StatusGrid(venue: widget.venue),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
 
                         // Courts Section Header
                         Row(
@@ -541,84 +589,75 @@ class _LocationCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.location_on_rounded,
-                  size: 24,
-                  color: colorScheme.primary,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      venue.displayAddress,
-                      style: textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${venue.address.city}, ${venue.address.district}',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+              child: Icon(
+                Icons.location_on_rounded,
+                size: 24,
+                color: colorScheme.primary,
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.my_location_outlined,
-                size: 16,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    venue.displayAddress,
+                    style: textTheme.bodyLarge,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${venue.address.city}, ${venue.address.district}',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(
+              Icons.my_location_outlined,
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Lat: ${venue.latitude.toStringAsFixed(6)}',
+              style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Lat: ${venue.latitude.toStringAsFixed(6)}',
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Icon(
-                Icons.my_location_outlined,
-                size: 16,
+            ),
+            const SizedBox(width: 16),
+            Icon(
+              Icons.my_location_outlined,
+              size: 16,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Lng: ${venue.longitude.toStringAsFixed(6)}',
+              style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Lng: ${venue.longitude.toStringAsFixed(6)}',
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -686,49 +725,34 @@ class _StatusGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          _StatusBadge(
-            label: venue.isVerified ? 'Verified' : 'Pending',
-            isActive: venue.isVerified,
-            activeColor: Colors.green,
-            inactiveColor: Colors.orange,
-          ),
-          Container(
-            width: 1,
-            height: 24,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            color: colorScheme.outline.withValues(alpha: 0.2),
-          ),
-          _StatusBadge(
-            label: venue.isActive ? 'Active' : 'Inactive',
-            isActive: venue.isActive,
-            activeColor: Colors.blue,
-            inactiveColor: Colors.grey,
-          ),
-          Container(
-            width: 1,
-            height: 24,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            color: colorScheme.outline.withValues(alpha: 0.2),
-          ),
-          Expanded(
-            child: Text(
-              '${venue.courtsCount} court${venue.courtsCount == 1 ? '' : 's'}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: AppFontWeights.regular,
-                color: colorScheme.onSurface,
-              ),
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _StatusBadge(
+          label: venue.isVerified ? 'Verified' : 'Pending',
+          isActive: venue.isVerified,
+          activeColor: Colors.green,
+          inactiveColor: Colors.orange,
+        ),
+        _StatusBadge(
+          label: venue.isActive ? 'Active' : 'Inactive',
+          isActive: venue.isActive,
+          activeColor: Colors.blue,
+          inactiveColor: Colors.grey,
+        ),
+        Container(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            '${venue.courtsCount} court${venue.courtsCount == 1 ? '' : 's'}',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: AppFontWeights.regular,
+              color: colorScheme.onSurface,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -787,7 +811,7 @@ class _CourtCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
           color: colorScheme.outline.withValues(alpha: 0.1),
         ),
@@ -800,13 +824,13 @@ class _CourtCard extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onEdit,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.cardPadding),
               child: Row(
                 children: [
                   Container(
@@ -829,7 +853,7 @@ class _CourtCard extends StatelessWidget {
                       size: 28,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -838,7 +862,7 @@ class _CourtCard extends StatelessWidget {
                           court.name,
                           style: textTheme.titleMedium,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: AppSpacing.xs),
                         Row(
                           children: [
                             Container(
