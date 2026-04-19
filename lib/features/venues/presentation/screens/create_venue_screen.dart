@@ -73,6 +73,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
   String? _galleryImageUploadStatusMessage;
 
   Venue? _savedVenue;
+  bool _isSaveLocked = false;
 
   @override
   void initState() {
@@ -218,6 +219,48 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     return 'image/jpeg';
   }
 
+  bool get _hasUnsavedChanges {
+    final isEditMode = widget.isEditMode;
+    if (!isEditMode) {
+      return _nameController.text.trim().isNotEmpty ||
+          _descriptionController.text.trim().isNotEmpty ||
+          _streetController.text.trim().isNotEmpty ||
+          _selectedCity != null ||
+          _districtController.text.trim().isNotEmpty ||
+          _latitudeController.text.trim().isNotEmpty ||
+          _longitudeController.text.trim().isNotEmpty ||
+          _amenities.isNotEmpty ||
+          _fullRefundHoursController.text.trim() != '24' ||
+          _partialRefundHoursController.text.trim() != '12' ||
+          _partialRefundPctController.text.trim() != '50' ||
+          _selectedCoverImagePath != null ||
+          _uploadedCoverImageUrl != null ||
+          _galleryImages.isNotEmpty;
+    }
+
+    final initialVenue = widget.initialVenue;
+    if (initialVenue == null) {
+      return false;
+    }
+
+    return _nameController.text.trim() != initialVenue.name ||
+        _descriptionController.text.trim() != initialVenue.description ||
+        _streetController.text.trim() != initialVenue.address.street ||
+        (_selectedCity ?? '') != initialVenue.address.city ||
+        _districtController.text.trim() != initialVenue.address.district ||
+        _latitudeController.text.trim() != initialVenue.latitude.toString() ||
+        _longitudeController.text.trim() != initialVenue.longitude.toString() ||
+        _fullRefundHoursController.text.trim() !=
+            initialVenue.fullRefundHours.toString() ||
+        _partialRefundHoursController.text.trim() !=
+            initialVenue.partialRefundHours.toString() ||
+        _partialRefundPctController.text.trim() !=
+            initialVenue.partialRefundPct.toString() ||
+        _amenities.join('|') != initialVenue.amenities.join('|') ||
+        _selectedCoverImagePath != null ||
+        _galleryImages.isNotEmpty;
+  }
+
   Future<void> _uploadCoverImageForVenue(String venueId) async {
     if (_selectedCoverImagePath == null || _selectedCoverImageName == null) {
       return;
@@ -288,6 +331,36 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     }
   }
 
+  Future<void> _confirmAndSubmit() async {
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(widget.isEditMode ? 'Save venue changes?' : 'Create venue?'),
+        content: Text(
+          widget.isEditMode
+              ? 'This will update the venue details and publish the changes.'
+              : 'This will create the venue record and make it available in the owner panel.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(widget.isEditMode ? 'Save' : 'Create Venue'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    await _submit();
+  }
+
   VenueUpsertRequest _buildRequest() {
     return VenueUpsertRequest(
       name: _nameController.text.trim(),
@@ -310,9 +383,15 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
 
-    final request = _buildRequest();
+    if (mounted) {
+      setState(() => _isSaveLocked = true);
+    } else {
+      _isSaveLocked = true;
+    }
 
     try {
+      final request = _buildRequest();
+
       final result = await _formController.submit(
         mode: widget.isEditMode ? VenueFormMode.edit : VenueFormMode.create,
         request: request,
@@ -353,6 +432,12 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
           ),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaveLocked = false);
+      } else {
+        _isSaveLocked = false;
+      }
     }
   }
 
@@ -423,7 +508,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           DropdownButtonFormField<String>(
-            value: _selectedCity,
+            initialValue: _selectedCity,
             hint: const Text('Select City'),
             decoration: InputDecoration(
               labelText: 'City',
@@ -717,14 +802,55 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
       animation: _formController,
       builder: (context, _) {
         final busy = _formController.isSubmitting ||
+          _isSaveLocked ||
             _isUploadingCoverImage ||
             _isUploadingGalleryImage;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.isEditMode ? 'Edit Venue' : 'Create Venue'),
-          ),
-          body: Form(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) async {
+            if (didPop) return;
+            
+            // If already uploading/submitting, prevent pop to avoid ghost requests
+            if (busy) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Please wait for the current operation to finish.')),
+              );
+              return;
+            }
+
+            if (!_hasUnsavedChanges) {
+              Navigator.of(context).pop();
+              return;
+            }
+
+            final shouldPop = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Discard changes?'),
+                content: const Text('You have unsaved changes. Are you sure you want to discard them?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Discard'),
+                  ),
+                ],
+              ),
+            );
+
+            if (shouldPop == true && context.mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(widget.isEditMode ? 'Edit Venue' : 'Create Venue'),
+            ),
+            body: Form(
             key: _formKey,
             autovalidateMode: AutovalidateMode.onUserInteraction,
             child: ListView(
@@ -776,13 +902,14 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
                       ? Icons.save_outlined
                       : Icons.add_circle_outline,
                   isLoading: _formController.isSubmitting,
-                  onPressed: busy ? null : _submit,
+                  onPressed: busy ? null : _confirmAndSubmit,
                 ),
 
                 const SizedBox(height: AppSpacing.md),
               ],
             ),
           ),
+        ),
         );
       },
     );

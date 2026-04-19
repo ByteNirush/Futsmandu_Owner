@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
-import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../auth/domain/owner_auth_models.dart';
 import '../../../auth/presentation/controllers/owner_auth_controller.dart';
 import '../../data/dashboard_controller.dart';
 import '../widgets/dashboard_header.dart';
+import '../widgets/kyc_status_banner.dart';
 import '../widgets/quick_action_button.dart';
+import '../widgets/revenue_sparkline_card.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/upcoming_booking_item.dart';
 import '../widgets/weekly_revenue_trend.dart';
@@ -115,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (widget.authController != null &&
                   widget.authController!.kycStatus !=
                       KycVerificationStatus.approved) ...[
-                _KycStatusBanner(
+                KycStatusBanner(
                   status: widget.authController!.kycStatus,
                   rejectionReason: widget.authController!.kycRejectionReason,
                   hasUploadedAnyKycDocument:
@@ -131,46 +132,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const _SectionHeader(title: "Today's Overview"),
               const SizedBox(height: AppSpacing.xs),
 
-              // Revenue — full-width
-              SummaryCard(
+              // Revenue — full-width sparkline card
+              RevenueSparklineCard(
                 title: 'Revenue Today',
                 value: overview.revenueToday,
-                icon: Icons.payments_outlined,
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.sm),
 
-              // Bookings / Pending / Active Courts — 3 equal columns
-              IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: SummaryCard(
-                        title: 'Bookings',
-                        value: overview.bookingsToday.toString(),
-                        icon: Icons.calendar_today_rounded,
-                      ),
+              // Bookings / Pending / Active Courts — Masonry Wrap
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: [
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - (AppSpacing.sm * 3)) / 2,
+                    child: SummaryCard(
+                      title: 'Bookings',
+                      value: overview.bookingsToday.toString(),
+                      icon: Icons.calendar_today_rounded,
                     ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: SummaryCard(
-                        title: 'Pending',
-                        value: overview.pendingBookings.toString(),
-                        icon: Icons.hourglass_bottom_rounded,
-                      ),
+                  ),
+                  SizedBox(
+                    width: (MediaQuery.of(context).size.width - (AppSpacing.sm * 3)) / 2,
+                    child: SummaryCard(
+                      title: 'Pending',
+                      value: overview.pendingBookings.toString(),
+                      icon: Icons.hourglass_bottom_rounded,
                     ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: SummaryCard(
-                        title: 'Active Courts',
-                        value: overview.activeCourts.toString(),
-                        icon: Icons.sports_soccer_rounded,
-                      ),
+                  ),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width - (AppSpacing.sm * 2),
+                    child: SummaryCard(
+                      title: 'Active Courts',
+                      value: overview.activeCourts.toString(),
+                      icon: Icons.sports_soccer_rounded,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xs2),
+              const SizedBox(height: AppSpacing.md),
 
               // ── Weekly Trend ──────────────────────────────────────────────
               const WeeklyRevenueTrend(),
@@ -247,101 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// KYC Banner (logic untouched — only theming benefits from the new color roles)
-// ---------------------------------------------------------------------------
-
-class _KycStatusBanner extends StatelessWidget {
-  const _KycStatusBanner({
-    required this.status,
-    required this.rejectionReason,
-    required this.hasUploadedAnyKycDocument,
-    required this.onTap,
-  });
-
-  final KycVerificationStatus status;
-  final String? rejectionReason;
-  final bool hasUploadedAnyKycDocument;
-  final VoidCallback onTap;
-
-  bool get _isRejected => status == KycVerificationStatus.rejected;
-
-  String get _title {
-    if (_isRejected) return 'KYC Rejected';
-    if (hasUploadedAnyKycDocument) return 'KYC Under Review';
-    return 'Complete KYC Verification';
-  }
-
-  String get _subtitle {
-    if (_isRejected) {
-      if (rejectionReason != null && rejectionReason!.trim().isNotEmpty) {
-        return 'Reason: ${rejectionReason!.trim()}';
-      }
-      return 'Your documents were not approved. Please update and resubmit.';
-    }
-    if (hasUploadedAnyKycDocument) {
-      return 'Documents submitted. We will notify you once review is complete.';
-    }
-    return 'Upload required documents to unlock all features.';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final containerColor = _isRejected
-        ? colorScheme.errorContainer
-        : colorScheme.primaryContainer;
-    final onContainerColor = _isRejected
-        ? colorScheme.onErrorContainer
-        : colorScheme.onPrimaryContainer;
-
-    return AppCard(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: containerColor, // Solid eSewa-style background, no gradient
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Row(
-          children: [
-            Icon(
-              _isRejected
-                  ? Icons.error_rounded
-                  : Icons.hourglass_top_rounded,
-              color: onContainerColor,
-              size: 28,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _title,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: onContainerColor,
-                          fontWeight: AppFontWeights.bold,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxs),
-                  Text(
-                    _subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: onContainerColor,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Icon(Icons.chevron_right_rounded, color: onContainerColor),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// KYC Banner moved to its own widget.
 
 // ---------------------------------------------------------------------------
 // Section header

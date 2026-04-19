@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 
-import '../../../../shared/widgets/app_card.dart';
 
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
@@ -19,29 +19,37 @@ class DashboardHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.md),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: colorScheme.primaryContainer,
-            foregroundColor: colorScheme.onPrimaryContainer,
-            child: const Icon(Icons.storefront_rounded),
-          ),
-          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${_greeting()}, Owner', style: textTheme.titleMedium),
+                Text(
+                  '${_greeting()}, Owner',
+                  style: textTheme.titleLarge?.copyWith(
+                    fontWeight: AppFontWeights.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.xxs / 2),
                 Text(
                   'Here is today\'s overview',
-                  style: textTheme.bodySmall,
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
+          ),
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: colorScheme.primaryContainer,
+            foregroundColor: colorScheme.onPrimaryContainer,
+            child: const Icon(Icons.storefront_rounded, size: 20),
           ),
         ],
       ),

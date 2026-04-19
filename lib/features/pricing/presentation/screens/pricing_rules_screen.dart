@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/network/owner_api_client.dart';
-import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_extended_action_button.dart';
 import '../../../bookings/data/owner_courts_api.dart';
 import '../../data/owner_pricing_api.dart';
@@ -341,6 +341,159 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
     }
   }
 
+  Widget _buildCourtSelector() {
+    if (_courts.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(AppSpacing.xs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.xs),
+            child: Text(
+              'Select Court',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              spacing: AppSpacing.xs,
+              children: [
+                for (final court in _courts)
+                  ChoiceChip(
+                    label: Text(court.name),
+                    selected: _selectedCourtId == court.id,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _selectedCourtId = court.id);
+                        _loadRules();
+                      }
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRuleCard(OwnerPricingRule rule) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Color getRuleTypeColor() {
+      switch (rule.ruleType.toLowerCase()) {
+        case 'surge':
+          return AppColors.warning;
+        case 'discount':
+          return AppColors.success;
+        case 'peak':
+          return colorScheme.primary;
+        default:
+          return colorScheme.secondary;
+      }
+    }
+
+    final ruleColor = getRuleTypeColor();
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: ruleColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    rule.ruleType.toUpperCase(),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: ruleColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _openRuleForm(rule);
+                    } else if (value == 'delete') {
+                      _deleteRule(rule);
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              _formatPrice(rule.pricePaisa),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Row(
+              children: [
+                Icon(Icons.schedule, size: 16, color: colorScheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text(
+                  '${_formatTime(rule.startTime)} - ${_formatTime(rule.endTime)}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+            Row(
+              children: [
+                Icon(Icons.calendar_today, size: 16, color: colorScheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text(
+                  _formatDays(rule.daysOfWeek),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -356,11 +509,42 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
     }
 
     if (_rules.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.lg),
-          child: Text('No pricing rules for this court yet.'),
-        ),
+      return ListView(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        children: [
+          _buildCourtSelector(),
+          if (_isRefreshing) ...[
+            const SizedBox(height: AppSpacing.sm),
+            const LinearProgressIndicator(),
+          ],
+          SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.rule_folder_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'No pricing rules yet',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Create your first rule for this court',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       );
     }
 
@@ -371,57 +555,19 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
       itemBuilder: (context, index) {
         if (index == 0) {
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_courts.isNotEmpty)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    spacing: AppSpacing.sm,
-                    children: [
-                      for (final court in _courts)
-                        ChoiceChip(
-                          label: Text(court.name),
-                          selected: _selectedCourtId == court.id,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() => _selectedCourtId = court.id);
-                              _loadRules();
-                            }
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: AppSpacing.sm),
-              if (_isRefreshing) const LinearProgressIndicator(),
+              _buildCourtSelector(),
+              if (_isRefreshing) ...[
+                const SizedBox(height: AppSpacing.sm),
+                const LinearProgressIndicator(),
+              ],
             ],
           );
         }
 
         final rule = _rules[index - 1];
-        return AppCard(
-          child: ListTile(
-            title: Text(
-              '${rule.ruleType.toUpperCase()} - ${_formatPrice(rule.pricePaisa)}',
-            ),
-            subtitle: Text(
-              '${_formatDays(rule.daysOfWeek)} - ${_formatTime(rule.startTime)} - ${_formatTime(rule.endTime)}',
-            ),
-            trailing: PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  _openRuleForm(rule);
-                } else if (value == 'delete') {
-                  _deleteRule(rule);
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                PopupMenuItem(value: 'delete', child: Text('Delete')),
-              ],
-            ),
-          ),
-        );
+        return _buildRuleCard(rule);
       },
     );
   }
@@ -453,12 +599,18 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
       ),
       floatingActionButton: AppExtendedActionButton(
         heroTag: 'pricing_new_rule_fab',
-        onPressed: _selectedCourtId == null ? null : () => _openRuleForm(),
+        onPressed: () {
+          if (_selectedCourtId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select a court first')),
+            );
+            return;
+          }
+          _openRuleForm();
+        },
         icon: Icons.add_rounded,
         label: 'New Rule',
-        tooltip: _selectedCourtId == null
-            ? 'Select a court first'
-            : 'Create a new pricing rule',
+        tooltip: 'Create a new pricing rule',
       ),
       body: body,
     );

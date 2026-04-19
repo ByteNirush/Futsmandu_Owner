@@ -63,7 +63,7 @@ class WeeklyRevenueTrend extends StatelessWidget {
             height: 180,
             child: CustomPaint(
               size: const Size(double.infinity, 180),
-              painter: _LineChartPainter(
+              painter: _BarChartPainter(
                 colorScheme: colorScheme,
                 textTheme: textTheme,
                 data: [5, 8, 6, 12, 15, 18, 16],
@@ -78,8 +78,8 @@ class WeeklyRevenueTrend extends StatelessWidget {
   }
 }
 
-class _LineChartPainter extends CustomPainter {
-  _LineChartPainter({
+class _BarChartPainter extends CustomPainter {
+  _BarChartPainter({
     required this.colorScheme,
     required this.textTheme,
     required this.data,
@@ -102,9 +102,9 @@ class _LineChartPainter extends CustomPainter {
     final chartHeight = size.height - bottomPadding - topPadding;
     final chartWidth = size.width;
 
-    // Grid lines
+    // Grid lines (horizontal)
     final gridPaint = Paint()
-      ..color = colorScheme.outlineVariant.withValues(alpha: 0.4)
+      ..color = colorScheme.outlineVariant.withValues(alpha: 0.3)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
@@ -114,100 +114,60 @@ class _LineChartPainter extends CustomPainter {
       _drawDashedLine(canvas, Offset(0, y), Offset(chartWidth, y), gridPaint);
     }
 
-    // Data points
-    final spanX = chartWidth / (data.length > 1 ? data.length - 1 : 1);
-    final points = <Offset>[];
+    // Bars
+    final spanX = chartWidth / data.length;
+    final barWidth = spanX * 0.45; // 45% of available span width
+    
+    // Find today/highest to highlight. I'll highlight the max value as "current/best".
+    double currentMax = 0;
+    int maxIndex = -1;
     for (int i = 0; i < data.length; i++) {
-      final x = i * spanX;
-      final y = topPadding + chartHeight - (data[i] / maxY * chartHeight);
-      points.add(Offset(x, y));
-    }
-
-    // Gradient fill
-    final fillPath = Path();
-    fillPath.moveTo(points.first.dx, size.height - bottomPadding);
-    for (int i = 0; i < points.length; i++) {
-      if (i == 0) {
-        fillPath.lineTo(points[i].dx, points[i].dy);
-      } else {
-        final cpx = points[i - 1].dx + (points[i].dx - points[i - 1].dx) / 2;
-        fillPath.cubicTo(
-          cpx, points[i - 1].dy,
-          cpx, points[i].dy,
-          points[i].dx, points[i].dy,
-        );
+      if (data[i] > currentMax) {
+        currentMax = data[i];
+        maxIndex = i;
       }
     }
-    fillPath.lineTo(points.last.dx, size.height - bottomPadding);
-    fillPath.close();
 
-    canvas.drawPath(
-      fillPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            colorScheme.primary.withValues(alpha: 0.28),
-            colorScheme.primary.withValues(alpha: 0.0),
-          ],
-        ).createShader(
-          Rect.fromLTWH(0, topPadding, chartWidth, chartHeight),
-        ),
-    );
+    for (int i = 0; i < data.length; i++) {
+      // Bar center
+      final cx = (i * spanX) + (spanX / 2);
+      final height = (data[i] / maxY) * chartHeight;
+      final yTop = topPadding + chartHeight - height;
+      final yBottom = topPadding + chartHeight;
 
-    // Line
-    final linePath = Path();
-    linePath.moveTo(points.first.dx, points.first.dy);
-    for (int i = 1; i < points.length; i++) {
-      final cpx = points[i - 1].dx + (points[i].dx - points[i - 1].dx) / 2;
-      linePath.cubicTo(
-        cpx, points[i - 1].dy,
-        cpx, points[i].dy,
-        points[i].dx, points[i].dy,
+      final isHiglighted = i == maxIndex;
+      
+      final barPaint = Paint()
+        ..color = isHiglighted 
+            ? colorScheme.primary 
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.8)
+        ..style = PaintingStyle.fill;
+        
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTRB(cx - (barWidth / 2), yTop, cx + (barWidth / 2), yBottom),
+        const Radius.circular(6), // Soft rounded tops
       );
-    }
-    canvas.drawPath(
-      linePath,
-      Paint()
-        ..color = colorScheme.primary
-        ..strokeWidth = 2.5
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round,
-    );
+      
+      canvas.drawRRect(rect, barPaint);
 
-    // Data point dots
-    final outerDot = Paint()
-      ..color = colorScheme.surface
-      ..style = PaintingStyle.fill;
-    final innerDot = Paint()
-      ..color = colorScheme.primary
-      ..style = PaintingStyle.fill;
-
-    for (final point in points) {
-      canvas.drawCircle(point, 5, outerDot);
-      canvas.drawCircle(point, 3.5, innerDot);
-    }
-
-    // X-axis labels
-    final tp = TextPainter(
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-    for (int i = 0; i < labels.length; i++) {
-      tp.text = TextSpan(
-        text: labels[i],
-        style: textTheme.labelSmall?.copyWith(
-          color: colorScheme.onSurfaceVariant,
+      // Labels
+      final tp = TextPainter(
+        text: TextSpan(
+          text: labels[i],
+          style: textTheme.labelSmall?.copyWith(
+            color: isHiglighted 
+                ? colorScheme.onSurface 
+                : colorScheme.onSurfaceVariant,
+            fontWeight: isHiglighted ? AppFontWeights.bold : AppFontWeights.regular,
+          ),
         ),
+        textAlign: TextAlign.center,
+        textDirection: TextDirection.ltr,
       );
       tp.layout();
       tp.paint(
         canvas,
-        Offset(
-          points[i].dx - tp.width / 2,
-          size.height - bottomPadding + 6,
-        ),
+        Offset(cx - tp.width / 2, size.height - bottomPadding + 6),
       );
     }
   }
@@ -224,7 +184,7 @@ class _LineChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _LineChartPainter old) {
+  bool shouldRepaint(covariant _BarChartPainter old) {
     return old.colorScheme != colorScheme ||
         old.textTheme != textTheme ||
         !listEquals(old.data, data) ||

@@ -11,6 +11,8 @@ class AppExtendedActionButton extends StatelessWidget {
     required this.onPressed,
     this.heroTag,
     this.tooltip,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   final String label;
@@ -18,6 +20,8 @@ class AppExtendedActionButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Object? heroTag;
   final String? tooltip;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -30,12 +34,14 @@ class AppExtendedActionButton extends StatelessWidget {
       child: FloatingActionButton.extended(
         heroTag: heroTag,
         onPressed: onPressed,
-        backgroundColor: enabled
-            ? colorScheme.primary
-            : colorScheme.surfaceContainerHighest,
-        foregroundColor: enabled
-            ? colorScheme.onPrimary
-            : colorScheme.onSurfaceVariant,
+        backgroundColor: backgroundColor ??
+            (enabled
+                ? colorScheme.primary
+                : colorScheme.surfaceContainerHighest),
+        foregroundColor: foregroundColor ??
+            (enabled
+                ? colorScheme.onPrimary
+                : colorScheme.onSurfaceVariant),
         elevation: enabled ? 8 : 0,
         focusElevation: enabled ? 10 : 0,
         hoverElevation: enabled ? 12 : 0,

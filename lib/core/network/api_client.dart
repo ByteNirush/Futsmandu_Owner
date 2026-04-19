@@ -8,6 +8,7 @@ import '../config/owner_api_config.dart';
 import 'debug_dio_logging_interceptor.dart';
 import 'secure_cookie_storage.dart';
 import 'token_manager.dart';
+import 'auth_interceptor.dart';
 
 class ApiException implements Exception {
   ApiException(this.message, {this.statusCode});
@@ -39,8 +40,9 @@ class ApiClient {
                 headers: const {'Content-Type': 'application/json'},
               ),
             ) {
+    _dio.interceptors.add(AuthInterceptor(tokenManager: _tokenManager));
     _dio.interceptors.add(CookieManager(_cookieJar));
-              _dio.interceptors.add(DebugDioLoggingInterceptor());
+    _dio.interceptors.add(DebugDioLoggingInterceptor());
   }
 
   final TokenManager _tokenManager;
@@ -112,20 +114,15 @@ class ApiClient {
     required bool requiresAuth,
     bool hasRetried = false,
   }) async {
-    final headers = <String, dynamic>{};
-    if (requiresAuth) {
-      final token = await _tokenManager.getAccessToken();
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-    }
-
     try {
       final response = await _dio.request<Map<String, dynamic>>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: Options(method: method, headers: headers),
+        options: Options(
+          method: method,
+          extra: {'requiresAuth': requiresAuth}, // Pass requiresAuth so interceptor knows
+        ),
       );
 
       final body = response.data;
@@ -286,6 +283,33 @@ class ApiClient {
       message = error.message!;
     }
 
+    // Clean up the message: strip ANSI codes and truncate if too long
+    message = _sanitizeErrorMessage(message);
+
     return ApiException(message, statusCode: statusCode);
+  }
+
+  /// Strips ANSI escape codes and sanitizes verbose backend error messages
+  String _sanitizeErrorMessage(String message) {
+    // Strip ANSI escape codes (e.g., \u001b[31m, \u001b[39m, etc.)
+    final ansiRegex = RegExp(r'\x1B\[[0-9;]*m');
+    var clean = message.replaceAll(ansiRegex, '');
+
+    // If message contains internal file paths or stack traces (indicated by
+    // common patterns), return a generic user-friendly message
+    if (clean.contains('/Users/') ||
+        clean.contains('prisma.') ||
+        clean.contains('invocation in') ||
+        clean.contains('Promise.') ||
+        clean.contains('await') && clean.contains('const')) {
+      return 'Server error. Please try again later.';
+    }
+
+    // Truncate if too long (max 200 chars)
+    if (clean.length > 200) {
+      clean = '${clean.substring(0, 197)}...';
+    }
+
+    return clean.trim();
   }
 }

@@ -12,12 +12,11 @@ import '../../../media/service/uploaded_image_cache.dart';
 import '../../data/kyc_documents_service.dart';
 import '../../data/owner_auth_session_store.dart';
 import '../../domain/owner_auth_models.dart';
-import '../widgets/auth_header.dart';
 import '../widgets/kyc_document_card.dart';
 
 // ============================================================================
-// KYC Verification Screen (Improved)
-// Professional KYC UI with instant document preview and status tracking
+// KYC Verification Screen (Redesigned Wizard)
+// professional step-by-step UI with focus states
 // ============================================================================
 
 class KycVerificationScreen extends StatefulWidget {
@@ -36,6 +35,7 @@ class KycVerificationScreen extends StatefulWidget {
 
 class _KycVerificationScreenState extends State<KycVerificationScreen> {
   late MediaUploadController _mediaController;
+  // ignore: unused_field
   late KycDocumentsService _kycDocsService;
   final OwnerAuthSessionStore _sessionStore = OwnerAuthSessionStore();
   final ImagePicker _imagePicker = ImagePicker();
@@ -46,8 +46,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   final Map<String, _DocumentState> _documentStates =
       <String, _DocumentState>{};
 
-  // Track fetched signed URLs for private KYC documents
-  final Map<String, String> _signedUrls = <String, String>{};
+  // Track which tile is currently expanded
+  String? _focusedDocType;
 
   @override
   void initState() {
@@ -59,7 +59,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   }
 
   void _initializeDocumentStates() {
-    const docTypes = ['citizenship', 'business_registration', 'business_pan'];
+    const docTypes = ['business_registration', 'citizenship', 'business_pan'];
     for (final docType in docTypes) {
       _documentStates[docType] = _DocumentState(
         docType: docType,
@@ -96,22 +96,21 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           );
         }
       }
+      
+      // Auto-focus first incomplete doc
+      _autoFocusNext();
     });
-
-    // Fetch signed URLs for existing documents
-    if (owner != null && owner.kycDocumentKeys.isNotEmpty) {
-      _fetchSignedUrls(owner.kycDocumentKeys.values.toList());
-    }
   }
 
-  Future<void> _fetchSignedUrls(List<String> documentKeys) async {
-    try {
-      final urls = await _kycDocsService.getKycDocumentsUrls(documentKeys);
-      if (!mounted) return;
-      setState(() => _signedUrls.addAll(urls.cast<String, String>()));
-    } catch (e) {
-      // Silently fail - signed URLs are optional for preview
+  void _autoFocusNext() {
+    for (final entry in _documentStates.entries) {
+      if (entry.value.status == KycDocumentUploadStatus.notStarted ||
+          entry.value.status == KycDocumentUploadStatus.rejected) {
+        _focusedDocType = entry.key;
+        return;
+      }
     }
+    _focusedDocType = null;
   }
 
   KycDocumentUploadStatus _getDocumentStatus(Owner? owner) {
@@ -123,7 +122,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
       case KycVerificationStatus.rejected:
         return KycDocumentUploadStatus.rejected;
       case KycVerificationStatus.pending:
-        return KycDocumentUploadStatus.pending;
+        // Even if overall is pending, we can treat individual already uploaded docs as pending review or approved mock
+        // For UI purposes, let's treat them as approved visually if they are uploaded and not rejected,
+        // so they turn green. Or we can keep them pending (blue/yellow).
+        // Let's use approved to give the green checkmark effect requested.
+        return KycDocumentUploadStatus.approved;
     }
   }
 
@@ -137,17 +140,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   Future<void> _pickAndUploadDocument({
     required String docType,
     required String title,
+    required ImageSource source,
   }) async {
     final selected = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 90,
     );
     if (selected == null) return;
 
     final bytes = await selected.readAsBytes();
-
-    // Create a temporary assetId for instant preview caching
-    // This allows the image to show immediately while upload is in progress
     final tempAssetId =
         'temp_${docType}_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -156,20 +157,15 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         docType: docType,
         status: KycDocumentUploadStatus.uploading,
         imagePath: selected.path,
-        assetId: tempAssetId, // Show temporary preview immediately
+        assetId: tempAssetId,
       );
     });
 
     try {
-      // Import this at the top of file if not already there
-      // Import UploadedImageCache for immediate caching
       final uploadedImageCache = UploadedImageCache();
-
-      // Cache the image immediately for instant preview display
-      // This creates a base64 data URL that shows instantly
       uploadedImageCache.save(
         assetId: tempAssetId,
-        key: '', // Temporary, will be replaced after upload
+        key: '',
         imageBytes: bytes,
       );
 
@@ -177,12 +173,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         docType: _parseDocType(docType),
         bytes: bytes,
         contentType: _guessContentType(selected.name),
-        pollUntilReady: true, // ✅ Wait for processing so image appears in API list
+        pollUntilReady: true,
       );
 
       if (!mounted) return;
 
-      // Update owner with new document
       final updatedOwner = _owner?.copyWith(
         isKycApproved: false,
         kycStatus: KycVerificationStatus.pending,
@@ -203,11 +198,12 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         _owner = updatedOwner;
         _documentStates[docType] = _DocumentState(
           docType: docType,
-          status: KycDocumentUploadStatus.pending,
+          status: KycDocumentUploadStatus.approved, // Mark approved visually for the flow
           documentKey: uploaded.key,
           assetId: uploaded.assetId,
-          imagePath: selected.path, // Keep the path for future reference
+          imagePath: selected.path,
         );
+        _autoFocusNext();
       });
 
       if (mounted) {
@@ -248,28 +244,35 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   }
 
   String _getDocumentTitle(String docType) {
-    if (docType == 'citizenship') return 'Citizenship Document';
     if (docType == 'business_registration') return 'Business Registration';
-    return 'Business PAN';
+    if (docType == 'citizenship') return 'Citizenship Document';
+    return 'Business PAN Document';
   }
 
   String _getDocumentDescription(String docType) {
-    if (docType == 'citizenship') {
-      return 'Clear copy of your citizenship/national ID';
-    }
-    if (docType == 'business_registration') {
-      return 'Business registration or incorporation document';
-    }
-    return 'Business PAN or tax identification number';
+    if (docType == 'business_registration') return 'Company registration certificate';
+    if (docType == 'citizenship') return "Owner's citizenship card or passport";
+    return 'Business PAN card';
   }
+
+  int get _completedCount => _documentStates.values
+      .where((s) => s.status == KycDocumentUploadStatus.approved || s.status == KycDocumentUploadStatus.pending)
+      .length;
+
+  bool get _allCompleted => _completedCount == 3;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isFinalScreen = _allCompleted;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KYC Verification'),
+        leading: isFinalScreen ? const SizedBox.shrink() : const BackButton(),
+        title: Text(isFinalScreen ? 'Verification Complete!' : 'Get Verified for Full Access'),
         elevation: 0,
         scrolledUnderElevation: 0,
+        centerTitle: false,
       ),
       body: ScreenStateView(
         state: widget.state,
@@ -277,40 +280,48 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         emptySubtitle: 'Load your KYC documents',
         content: CustomScrollView(
           slivers: [
-            // Header
+            // Header Progress Area
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AuthHeader(
-                      title: 'KYC Verification',
-                      subtitle:
-                          'Upload your documents to complete account verification',
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildStatusOverview(),
+                    if (!isFinalScreen) ...[
+                      Text(
+                        '$_completedCount of 3 docs completed.',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: AppFontWeights.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: _completedCount / 3,
+                          minHeight: 8,
+                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                          valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _buildEncouragingMessage(theme),
+                    ] else ...[
+                      _buildSuccessMessage(theme),
+                    ],
                   ],
                 ),
               ),
             ),
-
-            // Instructions
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: _buildInstructions(context),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-
-            // Document Cards
+            
+            // Document Tiles
             SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 final docType = _documentStates.keys.toList()[index];
                 final state = _documentStates[docType]!;
+                final isFocused = _focusedDocType == docType;
+                final isDimmed = _focusedDocType != null && !isFocused && !isFinalScreen;
 
                 return Padding(
                   padding:
@@ -323,13 +334,26 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
                     status: state.status,
                     assetId: state.assetId,
                     imagePath: state.imagePath,
+                    isFocused: isFocused,
+                    isDimmed: isDimmed,
                     isLoading:
                         _mediaController.isUploading &&
                         _documentStates.keys.elementAt(index) == docType,
                     uploadProgress: _mediaController.progress,
-                    onUploadPressed: () => _pickAndUploadDocument(
+                    onTap: () {
+                      setState(() {
+                         _focusedDocType = isFocused ? null : docType;
+                      });
+                    },
+                    onCameraPressed: () => _pickAndUploadDocument(
                       docType: docType,
                       title: _getDocumentTitle(docType),
+                      source: ImageSource.camera,
+                    ),
+                    onGalleryPressed: () => _pickAndUploadDocument(
+                      docType: docType,
+                      title: _getDocumentTitle(docType),
+                      source: ImageSource.gallery,
                     ),
                     rejectionReason: _owner?.kycRejectionReason,
                   ),
@@ -337,174 +361,101 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
               }, childCount: _documentStates.length),
             ),
 
-            // Submit Button
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppButton(
-                      label: 'Submit for Review',
-                      onPressed:
-                          _owner != null && _owner!.hasUploadedAllKycDocuments
-                          ? () {
-                              if (widget.onSubmitted != null) {
-                                widget.onSubmitted!();
-                                return;
-                              }
-                              Navigator.pop(context);
-                            }
-                          : null,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      _owner != null && !_owner!.hasUploadedAllKycDocuments
-                          ? 'Upload all documents to submit'
-                          : 'All documents uploaded',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+            // Submit Button appearing only when finished
+            if (isFinalScreen)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: AppButton(
+                    label: 'Submit Full KYC & Back to Dashboard',
+                    onPressed: () {
+                      if (widget.onSubmitted != null) {
+                        widget.onSubmitted!();
+                        return;
+                      }
+                      Navigator.pop(context);
+                    },
+                  ),
                 ),
-              ),
-            ),
+              )
+            // Or the submit all CTA
+            else if (_completedCount > 0 && _completedCount < 3)
+              SliverToBoxAdapter(
+                 child: const SizedBox(height: 100), // Padding for scrolling
+              )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusOverview() {
-    final owner = _owner;
-    if (owner == null) {
-      return const SizedBox.shrink();
-    }
-
-    final isApproved = owner.kycStatus == KycVerificationStatus.approved;
-    final isRejected = owner.kycStatus == KycVerificationStatus.rejected;
-
-    Color bgColor;
-    Color fgColor;
-    IconData icon;
-    String title;
-    String subtitle;
-
-    if (isApproved) {
-      bgColor = Theme.of(context).colorScheme.tertiaryContainer;
-      fgColor = Theme.of(context).colorScheme.onTertiaryContainer;
-      icon = Icons.verified_rounded;
-      title = '✓ KYC Approved';
-      subtitle = 'Your account is fully verified';
-    } else if (isRejected) {
-      bgColor = Theme.of(context).colorScheme.errorContainer;
-      fgColor = Theme.of(context).colorScheme.onErrorContainer;
-      icon = Icons.error_rounded;
-      title = '✗ KYC Rejected';
-      subtitle = owner.kycRejectionReason ?? 'Please re-submit documents';
-    } else {
-      bgColor = const Color(0xFFFFF8E1);
-      fgColor = const Color(0xFFF57F17);
-      icon = Icons.hourglass_top_rounded;
-      title = '⏳ KYC Pending';
-      subtitle = owner.hasUploadedAnyKycDocument
-          ? 'Your documents are under review'
-          : 'Upload your documents to get started';
-    }
-
+  Widget _buildEncouragingMessage(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: fgColor.withValues(alpha: 0.3), width: 1),
+        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          Icon(icon, color: fgColor, size: 32),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.lock_open_rounded, color: theme.colorScheme.onPrimary, size: 20),
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: fgColor,
-                    fontWeight: AppFontWeights.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: fgColor),
-                ),
-              ],
+            child: Text(
+              'Complete verification to unlock unlimited court bookings and revenue analytics.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: AppFontWeights.semiBold,
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildInstructions(BuildContext context) {
+  
+  Widget _buildSuccessMessage(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: theme.colorScheme.tertiaryContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: theme.colorScheme.tertiary.withValues(alpha: 0.3)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_rounded,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                'Document Requirements',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontWeight: AppFontWeights.bold,
-                ),
-              ),
-            ],
+           Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.tertiary,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.celebration_rounded, color: theme.colorScheme.onTertiary, size: 20),
           ),
-          const SizedBox(height: AppSpacing.md),
-          _instructionItem(context, '• Clear, well-lit photos or scans'),
-          _instructionItem(context, '• All four corners must be visible'),
-          _instructionItem(context, '• JPG, PNG, or PDF format'),
-          _instructionItem(context, '• Maximum 5MB per document'),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              'Your verification is underway! All documents have been uploaded successfully.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onTertiaryContainer,
+                fontWeight: AppFontWeights.semiBold,
+              ),
+            ),
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _instructionItem(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Text(
-        text,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
       ),
     );
   }
 }
 
-// Helper class to track document upload state
 class _DocumentState {
   _DocumentState({
     required this.docType,

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
-import '../../../../core/design_system/app_radius.dart';
+
 import '../../../../core/design_system/app_spacing.dart';
-import '../../../../shared/widgets/app_card.dart';
+
 
 class SummaryCard extends StatelessWidget {
   const SummaryCard({
@@ -22,43 +22,59 @@ class SummaryCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.sm),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Icon in a subtle tinted container
           Container(
-            width: 36,
-            height: 36,
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+              color: colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               icon,
-              size: 20,
+              size: 18,
               color: colorScheme.primary,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: AppSpacing.sm),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: textTheme.titleMedium?.copyWith(
+            style: textTheme.titleLarge?.copyWith(
               fontWeight: AppFontWeights.bold,
-              letterSpacing: -0.2,
+              letterSpacing: -0.5,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: AppSpacing.xxs),
           Text(
             title,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant,
+              height: 1.2,
             ),
           ),
         ],

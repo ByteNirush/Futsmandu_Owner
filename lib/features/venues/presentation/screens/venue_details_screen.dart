@@ -4,7 +4,6 @@ import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/design_system/app_radius.dart';
-import '../../../../core/design_system/app_shadows.dart';
 import '../../../../shared/widgets/safe_network_image.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../courts/presentation/screens/create_court_screen.dart';
