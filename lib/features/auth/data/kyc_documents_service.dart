@@ -63,4 +63,10 @@ class KycDocumentsService {
 
     return result;
   }
+
+  /// Fetch all KYC documents with short-lived signed URLs.
+  Future<FetchKycDocumentsResponse> getAllKycDocuments() async {
+    final response = await _apiClient.get('/api/v1/owner/media/kyc');
+    return FetchKycDocumentsResponse.fromApiResponse(response);
+  }
 }

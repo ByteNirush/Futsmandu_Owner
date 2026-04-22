@@ -181,7 +181,10 @@ class MediaAssetStatusResponse {
 
   final String status;
 
-  bool get isReady => status.toLowerCase() == 'ready';
+  bool get isReady {
+    final normalized = status.toLowerCase();
+    return normalized == 'completed' || normalized == 'ready';
+  }
   bool get isFailed => status.toLowerCase() == 'failed';
   bool get isProcessing => status.toLowerCase() == 'processing';
 
@@ -249,17 +252,36 @@ class MediaDownloadUrlResponse {
 
 class KycDocumentItem {
   const KycDocumentItem({
+    required this.assetId,
     required this.docType,
     required this.downloadUrl,
+    this.expiresIn,
+    this.kycStatus,
+    this.rejectionReason,
   });
 
+  final String assetId;
   final String docType;
   final String downloadUrl;
+  final int? expiresIn;
+  final String? kycStatus;
+  final String? rejectionReason;
 
   factory KycDocumentItem.fromJson(Map<String, dynamic> json) {
     return KycDocumentItem(
-      docType: (json['docType'] as String?) ?? '',
-      downloadUrl: (json['downloadUrl'] as String?) ?? '',
+      assetId: (json['assetId'] as String?) ??
+          (json['asset_id'] as String?) ??
+          '',
+      docType: (json['docType'] as String?) ??
+          (json['doc_type'] as String?) ??
+          '',
+      downloadUrl: (json['downloadUrl'] as String?) ??
+          (json['download_url'] as String?) ??
+          '',
+      expiresIn: json['expiresIn'] as int? ?? json['expires_in'] as int?,
+      kycStatus: (json['kycStatus'] as String?) ?? (json['kyc_status'] as String?),
+      rejectionReason: (json['rejectionReason'] as String?) ??
+          (json['rejection_reason'] as String?),
     );
   }
 
@@ -279,11 +301,58 @@ class FetchKycDocumentsResponse {
 
   final List<KycDocumentItem> documents;
 
-  factory FetchKycDocumentsResponse.fromJson(Map<String, dynamic> json) {
-    final dataList = json['data'] as List<dynamic>? ?? [];
+  factory FetchKycDocumentsResponse.fromApiResponse(dynamic raw) {
+    final dataList = _extractDocumentsList(raw);
+
     final documents = dataList
-        .map((item) => KycDocumentItem.fromJson(item as Map<String, dynamic>))
+        .map(_asMap)
+        .whereType<Map<String, dynamic>>()
+        .map(KycDocumentItem.fromJson)
+        .where((item) => item.docType.isNotEmpty && item.downloadUrl.isNotEmpty)
         .toList();
+
     return FetchKycDocumentsResponse(documents: documents);
+  }
+
+  static List<dynamic> _extractDocumentsList(dynamic raw) {
+    if (raw is List<dynamic>) {
+      return raw;
+    }
+
+    if (raw is Map<String, dynamic>) {
+      final keys = <String>['data', 'items', 'value'];
+      for (final key in keys) {
+        final candidate = raw[key];
+        if (candidate is List<dynamic>) {
+          return candidate;
+        }
+      }
+
+      for (final key in keys) {
+        final candidate = raw[key];
+        if (candidate is Map<String, dynamic>) {
+          final nested = _extractDocumentsList(candidate);
+          if (nested.isNotEmpty) {
+            return nested;
+          }
+        }
+      }
+    }
+
+    return const <dynamic>[];
+  }
+
+  static Map<String, dynamic>? _asMap(dynamic raw) {
+    if (raw is Map<String, dynamic>) {
+      return raw;
+    }
+
+    if (raw is Map) {
+      return raw.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    }
+
+    return null;
   }
 }

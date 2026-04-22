@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../auth/data/kyc_documents_service.dart';
 import '../model/kyc_image_cache_model.dart';
+import '../model/media_upload_models.dart';
 
 // ============================================================================
 // KycImageUrlProvider
@@ -45,8 +46,21 @@ class KycImageUrlProvider {
   /// Fetch URL from API and cache it
   Future<String> _fetchFreshUrl(String docType) async {
     try {
-      // Get fresh signed URL from API
-      final downloadUrl = await _kycService.getKycDocumentDownloadUrl(docType);
+      // Fetch all KYC docs and select the requested docType.
+      final response = await _kycService.getAllKycDocuments();
+      KycDocumentItem? document;
+      for (final doc in response.documents) {
+        if (doc.docType == docType) {
+          document = doc;
+          break;
+        }
+      }
+
+      if (document == null || document.downloadUrl.isEmpty) {
+        throw StateError('No signed URL found for docType: $docType');
+      }
+
+      final downloadUrl = document.downloadUrl;
 
       // Cache the URL with fetch timestamp
       _urlCache[docType] = KycImageCacheEntry(

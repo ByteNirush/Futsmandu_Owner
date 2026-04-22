@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/design_system/app_spacing.dart';
 import '../../../media/controller/media_upload_controller.dart';
-import '../../../media/model/media_upload_models.dart';
 import '../../../media/presentation/widgets/media_upload_tile.dart';
 import '../../../media/presentation/widgets/uploaded_image_display.dart';
 import '../../../media/service/media_upload_service.dart';
@@ -47,7 +47,6 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
   String? _status;
   String? _localPath;
   String? _uploadedAssetId;
-  String? _uploadedCdnUrl;
   late AnimationController _checkAnim;
   late Animation<double> _checkScale;
 
@@ -109,7 +108,6 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
         _state = UploadTileState.done;
         _progress = 1.0;
         _uploadedAssetId = result.assetId;
-        _uploadedCdnUrl = result.cdnUrl;
       });
 
       _checkAnim.forward(from: 0);
@@ -134,7 +132,7 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const accent = Color(0xFF00C896);
+    final accent = cs.primary;
     final isUploading = _state == UploadTileState.uploading;
     final isDone = _state == UploadTileState.done;
     final isError = _state == UploadTileState.error;
@@ -166,7 +164,7 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
               if (_hasImage)
                 _localPath != null
                     ? Image.file(File(_localPath!), fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _Placeholder(accent: accent))
+                        errorBuilder: (_, _, _) => _Placeholder(accent: accent))
                     : UploadedImageDisplay(
                         assetId: _uploadedAssetId,
                         image: widget.initialImageUrl,
@@ -183,7 +181,7 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                 BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                   child: Container(
-                    color: Colors.black54,
+                    color: cs.scrim.withValues(alpha: 0.6),
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -197,17 +195,15 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                                 CircularProgressIndicator(
                                   value: _progress > 0 ? _progress : null,
                                   strokeWidth: 3,
-                                  backgroundColor: Colors.white24,
-                                  valueColor:
-                                      const AlwaysStoppedAnimation(Colors.white),
+                                  backgroundColor: cs.onPrimary.withValues(alpha: 0.24),
+                                  valueColor: AlwaysStoppedAnimation(cs.onPrimary),
                                 ),
                                 if (_progress > 0)
                                   Center(
                                     child: Text(
                                       '${(_progress * 100).toInt()}%',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
+                                      style: TextStyle(
+                                        color: cs.onPrimary,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -218,9 +214,8 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                           const SizedBox(height: 10),
                           Text(
                             _status ?? 'Uploading…',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+                            style: TextStyle(
+                              color: cs.onPrimary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -249,8 +244,11 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.check_rounded,
-                          color: Colors.white, size: 16),
+                      child: Icon(
+                        Icons.check_rounded,
+                        color: cs.onPrimary,
+                        size: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -258,24 +256,27 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
               // Error state
               if (isError)
                 Container(
-                  color: Colors.black54,
+                  color: cs.scrim.withValues(alpha: 0.6),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline_rounded,
-                            color: Colors.white, size: 36),
+                        Icon(
+                          Icons.error_outline_rounded,
+                          color: cs.onPrimary,
+                          size: 36,
+                        ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'Upload failed',
-                          style: TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(color: cs.onPrimary),
                         ),
                         const SizedBox(height: 8),
                         TextButton(
                           onPressed: _pick,
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.white24,
+                            foregroundColor: cs.onPrimary,
+                            backgroundColor: cs.onPrimary.withValues(alpha: 0.24),
                           ),
                           child: const Text('Retry'),
                         ),
@@ -297,8 +298,10 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                         filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          color: Colors.black38,
+                            horizontal: AppSpacing.xs2,
+                            vertical: AppSpacing.xxs,
+                          ),
+                          color: cs.scrim.withValues(alpha: 0.5),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -307,16 +310,15 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                                     ? Icons.edit_rounded
                                     : Icons.add_photo_alternate_outlined,
                                 size: 14,
-                                color: Colors.white,
+                                color: cs.onPrimary,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 isDone
                                     ? 'Tap to change cover'
                                     : 'Tap to add cover image',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
+                                style: TextStyle(
+                                  color: cs.onPrimary,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -364,18 +366,16 @@ class _Placeholder extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               'Add Cover Photo',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: accent,
                 fontWeight: FontWeight.w600,
-                fontSize: 13,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'JPG, PNG or WEBP',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: cs.onSurfaceVariant,
-                fontSize: 11,
               ),
             ),
           ],
@@ -536,7 +536,7 @@ class _VenueGalleryUploaderState extends State<VenueGalleryUploader> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const accent = Color(0xFF00C896);
+    final accent = cs.primary;
     final canAdd = _images.length < widget.maxImages;
 
     return Column(
@@ -554,15 +554,14 @@ class _VenueGalleryUploaderState extends State<VenueGalleryUploader> {
             const SizedBox(width: 8),
             Container(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 2),
               decoration: BoxDecoration(
                 color: cs.primaryContainer,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
                 '${_images.length}/${widget.maxImages}',
-                style: TextStyle(
-                  fontSize: 11,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: cs.onPrimaryContainer,
                 ),
@@ -668,12 +667,12 @@ class _GalleryCell extends StatelessWidget {
               fit: BoxFit.cover,
             )
           else
-            Container(color: Colors.grey[200]),
+            Container(color: Theme.of(context).colorScheme.surfaceContainerHighest),
 
           // Upload overlay
           if (image.isUploading)
             Container(
-              color: Colors.black54,
+              color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.6),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -684,18 +683,19 @@ class _GalleryCell extends StatelessWidget {
                       child: CircularProgressIndicator(
                         value: image.progress > 0 ? image.progress : null,
                         strokeWidth: 2.5,
-                        backgroundColor: Colors.white24,
-                        valueColor:
-                            const AlwaysStoppedAnimation(Colors.white),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.24),
+                        valueColor: AlwaysStoppedAnimation(
+                          Theme.of(context).colorScheme.onPrimary,
+                        ),
                       ),
                     ),
                     if (image.progress > 0) ...[
                       const SizedBox(height: 4),
                       Text(
                         '${(image.progress * 100).toInt()}%',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -708,24 +708,31 @@ class _GalleryCell extends StatelessWidget {
           // Error overlay
           if (image.hasError)
             Container(
-              color: Colors.black54,
+              color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.6),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline_rounded,
-                        color: Colors.white, size: 24),
+                    Icon(
+                      Icons.error_outline_rounded,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: 24,
+                    ),
                     const SizedBox(height: 4),
                     GestureDetector(
                       onTap: onRetry,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
-                        color: Colors.white24,
-                        child: const Text(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onPrimary
+                            .withValues(alpha: 0.24),
+                        child: Text(
                           'Retry',
                           style: TextStyle(
-                              color: Colors.white, fontSize: 11),
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                         ),
                       ),
                     ),
@@ -745,8 +752,11 @@ class _GalleryCell extends StatelessWidget {
                   color: accentColor,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded,
-                    color: Colors.white, size: 10),
+                child: Icon(
+                  Icons.check_rounded,
+                  color: Theme.of(context).colorScheme.onPrimary,
+                  size: 10,
+                ),
               ),
             ),
 
@@ -759,12 +769,15 @@ class _GalleryCell extends StatelessWidget {
                 onTap: onRemove,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.black54,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.6),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.close_rounded,
-                      color: Colors.white, size: 12),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 12,
+                  ),
                 ),
               ),
             ),
@@ -802,7 +815,6 @@ class _AddImageCell extends StatelessWidget {
                 'Add',
                 style: TextStyle(
                   color: accent,
-                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
               ),

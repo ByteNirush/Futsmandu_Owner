@@ -56,6 +56,8 @@ class MediaStatusPoller {
     const interval = Duration(seconds: 2);
 
     _timers[assetId] = Timer.periodic(interval, (_) async {
+      attempt++;
+
       if (attempt >= maxAttempts) {
         _emitAndStop(
           assetId,
@@ -66,7 +68,6 @@ class MediaStatusPoller {
 
       try {
         final status = await _mediaApi.getUploadStatus(assetId);
-        attempt++;
 
         // Only emit if status changed (avoid duplicate events)
         final last = _lastStatus[assetId];

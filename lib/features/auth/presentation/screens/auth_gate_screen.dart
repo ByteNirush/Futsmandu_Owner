@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
@@ -91,6 +92,7 @@ class OwnerShellScreen extends StatefulWidget {
 
 class _OwnerShellScreenState extends State<OwnerShellScreen> {
   int _selectedIndex = 0;
+  final Set<int> _visitedPages = {0};
 
   late final List<DashboardQuickAction> _dashboardQuickActions = [
     DashboardQuickAction(
@@ -151,7 +153,15 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _tabs),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: List.generate(_tabs.length, (index) {
+          if (_visitedPages.contains(index)) {
+            return _tabs[index];
+          }
+          return const SizedBox.shrink();
+        }),
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
@@ -166,10 +176,7 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
             height: 64,
-            indicatorColor: Theme.of(context)
-                .colorScheme
-                .primary
-                .withValues(alpha: 0.14),
+            indicatorColor: Colors.transparent,
             indicatorShape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
@@ -210,32 +217,36 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
           ),
           child: NavigationBar(
             selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) =>
-                setState(() => _selectedIndex = index),
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+                _visitedPages.add(index);
+              });
+            },
             destinations: const [
               NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined, size: 24),
-                selectedIcon: Icon(Icons.dashboard, size: 24),
+                icon: Icon(CupertinoIcons.square_grid_2x2, size: 24),
+                selectedIcon: Icon(CupertinoIcons.square_grid_2x2_fill, size: 24),
                 label: 'Dashboard',
               ),
               NavigationDestination(
-                icon: Icon(Icons.calendar_month_outlined, size: 24),
-                selectedIcon: Icon(Icons.calendar_month, size: 24),
+                icon: Icon(CupertinoIcons.calendar, size: 24),
+                selectedIcon: Icon(CupertinoIcons.calendar, size: 24),
                 label: 'Bookings',
               ),
               NavigationDestination(
-                icon: Icon(Icons.location_city_outlined, size: 24),
-                selectedIcon: Icon(Icons.location_city, size: 24),
+                icon: Icon(CupertinoIcons.building_2_fill, size: 24),
+                selectedIcon: Icon(CupertinoIcons.building_2_fill, size: 24),
                 label: 'Venues',
               ),
               NavigationDestination(
-                icon: Icon(Icons.local_offer_outlined, size: 24),
-                selectedIcon: Icon(Icons.local_offer, size: 24),
+                icon: Icon(CupertinoIcons.tag, size: 24),
+                selectedIcon: Icon(CupertinoIcons.tag_fill, size: 24),
                 label: 'Pricing',
               ),
               NavigationDestination(
-                icon: Icon(Icons.grid_view_outlined, size: 24),
-                selectedIcon: Icon(Icons.grid_view, size: 24),
+                icon: Icon(CupertinoIcons.bars, size: 24),
+                selectedIcon: Icon(CupertinoIcons.bars, size: 24),
                 label: 'More',
               ),
             ],

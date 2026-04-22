@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../core/errors/app_failure.dart';
-import '../../../auth/data/owner_auth_session_store.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../data/repositories/venues_repository_impl.dart';
 import '../../domain/models/court_models.dart';
@@ -10,35 +9,21 @@ import '../../domain/repositories/venues_repository.dart';
 class VenueCourtsController extends ChangeNotifier {
   VenueCourtsController({
     VenuesRepository? repository,
-    OwnerAuthSessionStore? sessionStore,
-  }) : _repository = repository ?? VenuesRepositoryImpl(),
-       _sessionStore = sessionStore ?? OwnerAuthSessionStore() {
-    _loadOwnerRole();
-  }
+  }) : _repository = repository ?? VenuesRepositoryImpl();
 
   final VenuesRepository _repository;
-  final OwnerAuthSessionStore _sessionStore;
 
   ScreenUiState _state = ScreenUiState.loading;
   List<Court> _courts = const [];
   String? _errorMessage;
   bool _isBusy = false;
-  String? _ownerRole;
   bool _isDisposed = false;
 
   ScreenUiState get state => _state;
   List<Court> get courts => _courts;
   String? get errorMessage => _errorMessage;
   bool get isBusy => _isBusy;
-  bool get canDeleteCourt => (_ownerRole ?? '').toUpperCase() == 'OWNER_ADMIN';
-
-  Future<void> _loadOwnerRole() async {
-    if (_isDisposed) {
-      return;
-    }
-    _ownerRole = await _sessionStore.getOwnerRole();
-    _notifyIfMounted();
-  }
+  bool get canDeleteCourt => true;
 
   Future<void> loadCourts(String venueId) async {
     if (_isDisposed) {
@@ -113,7 +98,7 @@ class VenueCourtsController extends ChangeNotifier {
     }
 
     if (!canDeleteCourt) {
-      throw AppFailure('Only OWNER_ADMIN can delete courts.');
+      throw AppFailure('Unable to delete court.');
     }
 
     final previousCourts = _courts;

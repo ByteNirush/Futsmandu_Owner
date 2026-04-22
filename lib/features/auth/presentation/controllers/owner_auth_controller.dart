@@ -6,7 +6,7 @@ import '../../domain/owner_auth_models.dart';
 
 enum OwnerAuthStatus { initializing, unauthenticated, authenticated }
 
-const bool kBypassOwnerAdminVerification = false;
+const bool kBypassKycVerification = false;
 
 class OwnerAuthController extends ChangeNotifier {
   OwnerAuthController({OwnerAuthRepository? repository})
@@ -38,13 +38,13 @@ class OwnerAuthController extends ChangeNotifier {
   /// Can access the dashboard and basic features
   bool get canAccessWorkspace => isAuthenticated;
   
-  /// Indicates KYC is still pending admin review
+  /// Indicates KYC is still pending review
   bool get needsKycVerification =>
-      isAuthenticated && !kBypassOwnerAdminVerification && !isKycApproved;
+      isAuthenticated && !kBypassKycVerification && !isKycApproved;
   
   /// For backward compatibility - email verification status
   bool get needsVerification =>
-      isAuthenticated && !kBypassOwnerAdminVerification && !isVerified;
+      isAuthenticated && !kBypassKycVerification && !isVerified;
   
   bool get isInitializing => _status == OwnerAuthStatus.initializing;
 

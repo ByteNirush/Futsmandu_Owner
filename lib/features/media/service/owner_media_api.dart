@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/config/owner_api_config.dart';
+import '../../../core/network/debug_dio_logging_interceptor.dart';
 import '../../../core/network/owner_api_client.dart';
 import '../model/media_upload_models.dart';
 
@@ -140,13 +141,42 @@ class OwnerMediaApi {
   }
   /// Fetch all KYC documents for owner
   /// GET /api/v1/owner/media/kyc
+  /// Includes retry logic with exponential backoff for 429 rate limit errors.
   /// --------------------------------------------------------------------------
 
   Future<FetchKycDocumentsResponse> fetchAllKycDocuments() async {
-    final response = await _apiClient.get(
-      OwnerApiConfig.mediaKycListEndpoint,
-    );
-    return FetchKycDocumentsResponse.fromJson(response);
+    const maxRetries = 3;
+    const baseDelayMs = 500;
+
+    for (int attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        final response = await _apiClient.get(
+          OwnerApiConfig.mediaKycListEndpoint,
+        );
+
+        final normalized = <String, dynamic>{
+          if (response['data'] != null) 'data': response['data'],
+          if (response['items'] != null) 'items': response['items'],
+          if (response['value'] != null) 'value': response['value'],
+        };
+
+        return FetchKycDocumentsResponse.fromApiResponse(
+          normalized.isEmpty ? response : normalized,
+        );
+      } on DioException catch (e) {
+        final is429 = e.response?.statusCode == 429;
+        final isLastAttempt = attempt == maxRetries;
+
+        if (is429 && !isLastAttempt) {
+          final delayMs = baseDelayMs * (1 << attempt); // exponential: 500, 1000, 2000ms
+          await Future.delayed(Duration(milliseconds: delayMs));
+          continue;
+        }
+        rethrow;
+      }
+    }
+
+    throw Exception('Failed to fetch KYC documents after $maxRetries retries');
   }
   // --------------------------------------------------------------------------
   // Private helpers
@@ -177,7 +207,7 @@ class OwnerMediaStorageUploader {
                 receiveTimeout: const Duration(seconds: 120),
                 sendTimeout: const Duration(seconds: 120),
               ),
-            );
+            )..interceptors.add(DebugDioLoggingInterceptor());
 
   final Dio _dio;
 

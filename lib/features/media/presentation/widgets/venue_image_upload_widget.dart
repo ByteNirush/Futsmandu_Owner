@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
-import '../../model/media_upload_models.dart';
+
 
 // ============================================================================
 // VenueImageUploadWidget
@@ -140,7 +140,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         ),
         child: Material(
-          color: Colors.transparent,
+          color: colorScheme.surface.withValues(alpha: 0),
           child: InkWell(
             onTap: widget.isUploading ? null : _pickImage,
             borderRadius: BorderRadius.circular(12),
@@ -234,7 +234,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: colorScheme.scrim.withValues(alpha: 0.2),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -244,7 +244,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Change Image'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: colorScheme.onPrimary,
                         foregroundColor: colorScheme.primary,
                       ),
                     ),
@@ -259,16 +259,15 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
               right: 12,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade600,
+                  color: colorScheme.tertiary,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
+                child: Text(
                   'Ready to upload',
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
+                    color: colorScheme.onTertiary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -343,22 +342,21 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
                 right: 12,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade600,
+                      color: colorScheme.primary,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                      children: [
                       Icon(Icons.check_rounded,
-                          size: 14, color: Colors.white),
-                      SizedBox(width: 4),
+                            size: 14, color: colorScheme.onPrimary),
+                        const SizedBox(width: 4),
                       Text(
                         'Uploaded',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
+                            color: colorScheme.onPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -373,22 +371,21 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
                 right: 12,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                   decoration: BoxDecoration(
-                    color: Colors.black38,
+                    color: colorScheme.scrim.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Icon(Icons.open_in_full_rounded,
-                          size: 12, color: Colors.white),
-                      SizedBox(width: 4),
+                          size: 12, color: colorScheme.onPrimary),
+                      const SizedBox(width: 4),
                       Text(
                         'View',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
+                          color: colorScheme.onPrimary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

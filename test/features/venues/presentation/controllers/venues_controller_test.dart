@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:futsmandu/core/errors/app_failure.dart';
 
 import 'package:futsmandu/features/venues/domain/models/court_models.dart';
 import 'package:futsmandu/features/venues/domain/models/venue_models.dart';
@@ -17,12 +20,18 @@ class FakeVenuesRepository implements VenuesRepository {
   Court? createdCourt;
   Court? updatedCourt;
   String? deletedCourtId;
+  Completer<void>? createVenueCompleter;
+  Completer<void>? updateVenueCompleter;
+  int createVenueCallCount = 0;
+  int updateVenueCallCount = 0;
 
   @override
   Future<Venue> createVenue(VenueUpsertRequest request) async {
+    createVenueCallCount++;
     if (shouldThrow) {
       throw StateError('create failed');
     }
+    await createVenueCompleter?.future;
     createdVenue = Venue(
       id: 'venue-new',
       name: request.name,
@@ -92,9 +101,11 @@ class FakeVenuesRepository implements VenuesRepository {
     required String venueId,
     required VenueUpsertRequest request,
   }) async {
+    updateVenueCallCount++;
     if (shouldThrow) {
       throw StateError('update failed');
     }
+    await updateVenueCompleter?.future;
     updatedVenue = Venue(
       id: venueId,
       name: request.name,
@@ -269,5 +280,41 @@ void main() {
     expect(result?.id, 'venue-new');
     expect(controller.isSubmitting, isFalse);
     expect(repository.createdVenue?.name, 'Arena One');
+  });
+
+  test('VenueFormController rejects concurrent create submissions', () async {
+    final repository = FakeVenuesRepository();
+    repository.createVenueCompleter = Completer<void>();
+    final controller = VenueFormController(repository: repository);
+    final request = VenueUpsertRequest(
+      name: 'Arena One',
+      description: 'Main venue',
+      address: const VenueAddress(
+        street: 'Street 1',
+        city: 'Kathmandu',
+        district: 'Kathmandu',
+      ),
+      latitude: 27.7172,
+      longitude: 85.324,
+      amenities: const ['Parking'],
+      fullRefundHours: 24,
+      partialRefundHours: 12,
+      partialRefundPct: 50,
+    );
+
+    final firstSubmit = controller.submit(
+      mode: VenueFormMode.create,
+      request: request,
+    );
+
+    await expectLater(
+      controller.submit(mode: VenueFormMode.create, request: request),
+      throwsA(isA<AppFailure>()),
+    );
+
+    repository.createVenueCompleter!.complete();
+    await firstSubmit;
+
+    expect(repository.createVenueCallCount, 1);
   });
 }

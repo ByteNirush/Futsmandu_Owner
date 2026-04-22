@@ -24,6 +24,10 @@ class VenueFormController extends ChangeNotifier {
     required VenueUpsertRequest request,
     String? venueId,
   }) async {
+    if (_isSubmitting) {
+      throw AppFailure('A venue save is already in progress.');
+    }
+
     _isSubmitting = true;
     _errorMessage = null;
     notifyListeners();

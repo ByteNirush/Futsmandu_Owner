@@ -52,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context, _) {
         return AuthScaffold(
           role: AppRole.owner,
+          allowScroll: false,
           child: AuthCard(
             role: AppRole.owner,
             title: 'Welcome Back',
@@ -65,21 +66,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   AppInputField(
                     controller: _emailController,
                     label: 'Email',
+                    showLabelAboveField: true,
                     hint: 'Enter your email',
                     prefixIcon: Icons.email_outlined,
                     keyboardType: TextInputType.emailAddress,
                     validator: OwnerAuthValidators.validateEmail,
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.md),
                   AppInputField(
                     controller: _passwordController,
                     label: 'Password',
+                    showLabelAboveField: true,
                     hint: 'Enter your password',
                     prefixIcon: Icons.lock_outline,
                     isPassword: true,
                     textInputAction: TextInputAction.done,
                     validator: OwnerAuthValidators.validatePassword,
                   ),
+                  const SizedBox(height: AppSpacing.xs),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -88,39 +92,66 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Text('Forgot Password?'),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
+                  const SizedBox(height: AppSpacing.sm),
                   AppButton(
                     label: 'Sign In',
                     isLoading: widget.authController.isBusy,
                     onPressed: widget.authController.isBusy ? null : _signIn,
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                          ),
                         ),
-                        child: Text(
-                          'OR',
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                                fontWeight: AppFontWeights.semiBold,
-                              ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
+                          child: Text(
+                            'OR',
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontWeight: AppFontWeights.semiBold,
+                            ),
+                          ),
                         ),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
+                        Expanded(
+                          child: Divider(
+                            color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  AppButton(
-                    label: 'Create Account',
-                    variant: AppButtonVariant.outlined,
-                    onPressed: () => Navigator.pushNamed(context, '/register'),
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Don't have an account? ",
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/register'),
+                          child: Text(
+                            'Register',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

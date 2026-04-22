@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -92,12 +93,10 @@ class UploadedImageDisplay extends StatelessWidget {
                   fit: fit,
                   errorBuilder: _onImageError,
                 )
-              : Image.network(
-                  url,
+              : _NetworkImageWithCleanClient(
+                  url: url,
                   fit: fit,
                   errorBuilder: _onImageError,
-                  cacheHeight: height.toInt(),
-                  cacheWidth: width.toInt(),
                 ),
         ),
       );
@@ -145,6 +144,115 @@ class UploadedImageDisplay extends StatelessWidget {
     // Remove any whitespace
     base64String = base64String.replaceAll(RegExp(r'\s'), '');
     return Uint8List.fromList(base64Decode(base64String));
+  }
+}
+
+// ============================================================================
+// _NetworkImageWithCleanClient
+// Fetches network images using a clean HttpClient that doesn't inherit
+// global Dio interceptors or Authorization headers.
+// This is critical for signed URLs (like R2) where extra headers invalidate
+// the signature and cause 403 errors.
+// ============================================================================
+class _NetworkImageWithCleanClient extends StatefulWidget {
+  const _NetworkImageWithCleanClient({
+    required this.url,
+    required this.fit,
+    required this.errorBuilder,
+  });
+
+  final String url;
+  final BoxFit fit;
+  final ImageErrorWidgetBuilder errorBuilder;
+
+  @override
+  State<_NetworkImageWithCleanClient> createState() =>
+      _NetworkImageWithCleanClientState();
+}
+
+class _NetworkImageWithCleanClientState
+    extends State<_NetworkImageWithCleanClient> {
+  Uint8List? _imageBytes;
+  bool _isLoading = true;
+  Object? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchImage();
+  }
+
+  @override
+  void didUpdateWidget(_NetworkImageWithCleanClient oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _fetchImage();
+    }
+  }
+
+  Future<void> _fetchImage() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Use a clean HttpClient without any inherited headers
+      final client = HttpClient();
+      client.autoUncompress = true;
+
+      final request = await client.getUrl(Uri.parse(widget.url));
+      // Do NOT add any headers - let the signed URL work as-is
+
+      final response = await request.close();
+
+      if (response.statusCode == 200) {
+        final bytes = await response.expand((chunk) => chunk).toList();
+        if (mounted) {
+          setState(() {
+            _imageBytes = Uint8List.fromList(bytes);
+            _isLoading = false;
+          });
+        }
+      } else {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+
+      client.close();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e;
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Container(
+        color: Colors.grey[300],
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null || _imageBytes == null) {
+      return widget.errorBuilder(context, _error ?? 'Failed to load', null);
+    }
+
+    return Image.memory(
+      _imageBytes!,
+      fit: widget.fit,
+      errorBuilder: widget.errorBuilder,
+    );
   }
 }
 

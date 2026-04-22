@@ -12,9 +12,10 @@ class OwnerApiConfig {
   // );
   static const String baseUrl = String.fromEnvironment(
     'OWNER_API_BASE_URL',
-    defaultValue: 'https://aloof-word-tuition.ngrok-free.dev',
+    defaultValue: 'http://localhost:3002/',
+    // defaultValue: 'http://192.168.18.104:3002',
   );
-
+  
   static const String apiPrefix = '/api/v1/owner';
 
   static const String authEndpoint = '$apiPrefix/auth';

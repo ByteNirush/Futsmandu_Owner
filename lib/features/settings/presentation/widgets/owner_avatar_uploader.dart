@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../../core/design_system/app_spacing.dart';
 import '../../../media/controller/media_upload_controller.dart';
 import '../../../media/presentation/widgets/uploaded_image_display.dart';
 import '../../../media/service/media_upload_service.dart';
@@ -155,7 +155,7 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const accent = Color(0xFF00C896);
+    final accent = cs.primary;
     final size = widget.radius * 2;
 
     return GestureDetector(
@@ -192,11 +192,11 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0.0, end: _progress),
                   duration: const Duration(milliseconds: 200),
-                  builder: (_, val, __) => CircularProgressIndicator(
+                  builder: (_, val, _) => CircularProgressIndicator(
                     value: _progress > 0 ? val : null,
                     strokeWidth: 3,
-                    backgroundColor: Colors.transparent,
-                    valueColor: const AlwaysStoppedAnimation(accent),
+                    backgroundColor: cs.surface.withValues(alpha: 0),
+                    valueColor: AlwaysStoppedAnimation(accent),
                   ),
                 ),
               ),
@@ -223,8 +223,7 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
                     ? Center(
                         child: Text(
                           '${(_progress * 100).toInt()}%',
-                          style: TextStyle(
-                            fontSize: 7,
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: cs.onSurfaceVariant,
                           ),
@@ -234,7 +233,7 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
                         _hasError
                             ? Icons.refresh_rounded
                             : Icons.camera_alt_rounded,
-                        color: Colors.white,
+                        color: cs.onPrimary,
                         size: 16,
                       ),
               ),
@@ -252,8 +251,8 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
         fit: BoxFit.cover,
         width: size,
         height: size,
-        errorBuilder: (_, __, ___) =>
-            _buildInitials(size, Theme.of(context).colorScheme, const Color(0xFF00C896)),
+        errorBuilder: (_, _, _) =>
+          _buildInitials(size, Theme.of(context).colorScheme, Theme.of(context).colorScheme.primary),
       );
     }
     return UploadedImageDisplay(
@@ -355,16 +354,18 @@ class _SourceTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xs2,
+          ),
           child: Row(
             children: [
               Icon(icon, color: cs.primary, size: 22),
               const SizedBox(width: 14),
               Text(
                 label,
-                style: const TextStyle(
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontSize: 15,
                 ),
               ),
             ],

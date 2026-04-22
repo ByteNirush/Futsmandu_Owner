@@ -1,9 +1,10 @@
+
 import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 
-import '../../domain/owner_auth_validators.dart';
+
 import '../controllers/owner_auth_controller.dart';
-import '../../../../shared/widgets/app_button.dart';
+
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({super.key, required this.authController});
@@ -21,7 +22,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   String _flow = 'owner-auth';
   String? _nextRoute;
-  String? _phone;
   String? _ownerId;
 
   bool get _isOwnerAuthFlow => _flow == 'owner-auth';
@@ -33,7 +33,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     if (args is Map<String, dynamic>) {
       _flow = args['flow']?.toString() ?? _flow;
       _nextRoute = args['nextRoute']?.toString();
-      _phone = args['phone']?.toString();
       _ownerId = args['ownerId']?.toString();
       final email = args['email']?.toString();
       if (email != null && email.isNotEmpty) {
@@ -74,7 +73,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ).showSnackBar(SnackBar(content: Text(result.message)));
         Navigator.of(
           context,
-        ).pushNamedAndRemoveUntil('/login', (route) => false);
+        ).pushNamedAndRemoveUntil('/', (route) => false);
       } on Exception catch (error) {
         if (!mounted) return;
         final message =
@@ -114,6 +113,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     try {
       final message = await widget.authController.resendOtp(ownerId: ownerId);
       if (!mounted) return;
+
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(message)));
@@ -130,70 +130,153 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final subtitle = _isOwnerAuthFlow
-        ? 'Enter the 6-digit code sent to ${_emailController.text.trim()}'
-              '${_phone == null || _phone!.isEmpty ? '' : ' and $_phone'}'
-        : 'Enter the 6-digit code sent to your email';
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final primaryColor = colorScheme.primary;
+    
+    // Fallback format if email exists
+    final emailDisplay = _emailController.text.trim();
+    final hasEmail = emailDisplay.isNotEmpty;
+    
+    final destination = hasEmail ? emailDisplay : 'your email';
 
-    return AnimatedBuilder(
-      animation: widget.authController,
-      builder: (context, _) {
-        return AuthScaffold(
-          role: AppRole.owner,
-          showAppBar: true,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              AuthHeader(
-                title: _isOwnerAuthFlow ? 'Verify your account' : 'Verify OTP',
-                subtitle: subtitle,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              if (_isOwnerAuthFlow)
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AppInputField(
-                        controller: _emailController,
-                        label: 'Email',
-                        hint: 'Enter your email',
-                        prefixIcon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        validator: OwnerAuthValidators.validateEmail,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Center(
-                        child: OtpPinInput(
-                          controller: _otpController,
-                          enabled: !widget.authController.isBusy,
-                        ),
-                      ),
-                    ],
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0, // No horizontal dividing line when scrolled
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colorScheme.onSurface, size: 22),
+          onPressed: () => Navigator.pop(context),
+        ),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: widget.authController,
+          builder: (context, _) {
+            final isBusy = widget.authController.isBusy;
+            
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Branding: Logo at the top
+                  const AppLogo(size: 56),
+                  const SizedBox(height: 32),
+                  
+                  // Typography: Heading
+                  Text(
+                    _isOwnerAuthFlow ? 'Verify your account' : 'Verify OTP',
+                    style: textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: colorScheme.onSurface.withValues(alpha: 0.9), // Dark slate gray equivalent
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                )
-              else
-                Center(child: OtpPinInput(controller: _otpController)),
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                label: 'Verify',
-                isLoading: widget.authController.isBusy,
-                onPressed: widget.authController.isBusy ? null : _verify,
+                  const SizedBox(height: 12),
+                  
+                  // Typography: Instruction Text
+                  Text(
+                    'Enter the 6-digit code sent to',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8), // Softer, legible gray
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Read-only confirmed data for email/phone
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                    ),
+                    child: Text(
+                      destination,
+                      style: textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+
+                  const SizedBox(height: 48),
+                  
+                  // OTP Inputs Area
+                  Form(
+                    key: _formKey,
+                    child: Center(
+                      child: OtpPinInput(
+                        controller: _otpController,
+                        enabled: !isBusy,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 56),
+                  
+                  // Call to Action: Large, pill-shaped primary button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30), // Pill-shaped
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: isBusy ? null : _verify,
+                      child: isBusy
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Verify',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Secondary Action: Clean text-only link
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.onSurfaceVariant,
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    onPressed: isBusy ? null : _resend,
+                    child: const Text('Resend Code'),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Center(
-                child: TextButton(
-                  onPressed: widget.authController.isBusy ? null : _resend,
-                  child: const Text('Resend Code'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+            );
+          },
+        ),
+      ),
     );
   }
 }

@@ -1,14 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/design_system/app_spacing.dart';
 import '../../../media/controller/media_upload_controller.dart';
 import '../../../media/model/media_upload_models.dart';
 import '../../../media/presentation/widgets/media_upload_tile.dart';
-import '../../../media/presentation/widgets/refreshable_kyc_image_display.dart';
 import '../../../media/service/kyc_image_url_provider.dart';
 import '../../../media/service/media_upload_service.dart';
 import '../../data/owner_auth_session_store.dart';
@@ -54,8 +50,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
   Owner? _owner;
   String? _ownerId;
   bool _isSubmitting = false;
-  List<KycDocumentItem> _previousUploadedDocs = [];
-  bool _isLoadingPrevious = false;
+  final Map<String, String> _networkImageUrls = {};
 
   static const _docs = [
     _KycDocInfo(
@@ -129,24 +124,23 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
 
   Future<void> _loadPreviouslyUploadedDocuments() async {
     if (!mounted) return;
-    setState(() => _isLoadingPrevious = true);
     try {
       final response = await _mediaController.fetchAllKycDocuments();
       if (!mounted) return;
-      
+
       debugPrint('📥 Fetched ${response.documents.length} KYC documents');
-      for (final doc in response.documents) {
-        debugPrint('   - ${doc.docType}: ${doc.downloadUrl.substring(0, 100)}...');
-      }
       
       setState(() {
-        _previousUploadedDocs = response.documents;
-        _isLoadingPrevious = false;
+        _networkImageUrls.clear();
+        for (final doc in response.documents) {
+          if (doc.docType.isNotEmpty) {
+            _networkImageUrls[doc.docType] = doc.downloadUrl;
+          }
+        }
       });
     } catch (e) {
       if (!mounted) return;
       debugPrint('❌ Failed to fetch previous documents: $e');
-      setState(() => _isLoadingPrevious = false);
     }
   }
 
@@ -244,50 +238,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
 
   bool get _canSubmit => _uploadedCount > 0;
 
-  List<Widget> _buildPreviousDocumentsList() {
-    return List.generate(_previousUploadedDocs.length, (i) {
-      final doc = _previousUploadedDocs[i];
-      final docTypeEnum = doc.kycDocType;
-      final docTypeName = _getDocTypeName(docTypeEnum);
 
-      return Padding(
-        padding:
-            EdgeInsets.only(bottom: i < _previousUploadedDocs.length - 1 ? 12 : 0),
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: 1.0),
-          duration: Duration(milliseconds: 450 + i * 50),
-          curve: Curves.easeOutCubic,
-          builder: (_, v, child) => Opacity(
-            opacity: v,
-            child: Transform.translate(
-              offset: Offset(0, 18 * (1 - v)),
-              child: child,
-            ),
-          ),
-          child: _PreviousDocumentCard(
-            docType: docTypeName,
-            downloadUrl: doc.downloadUrl,
-            accentColor: const Color(0xFF00C896),
-            imageUrlProvider: _imageUrlProvider,
-            docTypeKey: doc.docType,
-          ),
-        ),
-      );
-    });
-  }
-
-  String _getDocTypeName(OwnerKycDocType? docType) {
-    switch (docType) {
-      case OwnerKycDocType.citizenship:
-        return 'Citizenship Document';
-      case OwnerKycDocType.businessRegistration:
-        return 'Business Registration';
-      case OwnerKycDocType.businessPan:
-        return 'PAN Document';
-      default:
-        return 'Document';
-    }
-  }
 
   void _showSnack(String message, {bool isError = false}) {
     if (!mounted) return;
@@ -307,7 +258,9 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
           ],
         ),
         backgroundColor:
-            isError ? Theme.of(context).colorScheme.error : const Color(0xFF00C896),
+          isError
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -332,7 +285,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    const accent = Color(0xFF00C896);
+    final accent = colorScheme.primary;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -424,6 +377,9 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
                             icon: doc.icon,
                             localImagePath: _localImagePaths[k],
                             assetId: _uploadedDocs[k]?.assetId,
+                            networkImageUrl: _networkImageUrls[k],
+                            docType: k,
+                            onRefreshUrl: () => _imageUrlProvider.refreshImageUrl(k),
                             uploadState:
                                 _tileStates[k] ?? UploadTileState.idle,
                             uploadProgress: _tileProgress[k] ?? 0,
@@ -442,17 +398,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
                         ),
                       );
                     }),
-                    if (_previousUploadedDocs.isNotEmpty) ...[
-                      const SizedBox(height: 28),
-                      Text(
-                        'Previously Uploaded',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-                      ..._buildPreviousDocumentsList(),
-                    ],
+
                   ]),
                 ),
               ),
@@ -483,19 +429,12 @@ class _HeaderBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    const accent = Color(0xFF00C896);
+    final accent = colorScheme.primary;
     final progress = total > 0 ? uploadedCount / total : 0.0;
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            accent.withValues(alpha: 0.07),
-            colorScheme.surface,
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+        color: colorScheme.surface,
       ),
       child: Align(
         alignment: Alignment.bottomCenter,
@@ -511,7 +450,7 @@ class _HeaderBackground extends StatelessWidget {
                 minHeight: 3,
                 backgroundColor:
                     colorScheme.outlineVariant.withValues(alpha: 0.25),
-                valueColor: const AlwaysStoppedAnimation(accent),
+                valueColor: AlwaysStoppedAnimation(accent),
               ),
             ),
           ),
@@ -535,14 +474,15 @@ class _KycBanner extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     if (status == KycVerificationStatus.approved) {
+      final accent = Theme.of(context).colorScheme.primary;
       return _tile(
         context,
         icon: Icons.verified_rounded,
         title: 'KYC Approved',
         body: 'Your documents are verified. You can update anytime.',
-        bg: const Color(0xFF00C896).withValues(alpha: 0.1),
-        fg: const Color(0xFF00C896),
-        border: const Color(0xFF00C896).withValues(alpha: 0.25),
+        bg: accent.withValues(alpha: 0.1),
+        fg: accent,
+        border: accent.withValues(alpha: 0.25),
       );
     }
 
@@ -619,26 +559,18 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: cs.primaryContainer.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline_rounded, color: cs.primary, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Upload clear photos. JPG, PNG, WEBP accepted. Max 5 MB each.',
-              style: TextStyle(
-                  color: cs.onPrimaryContainer, fontSize: 11.5),
-            ),
+    return Row(
+      children: [
+        Icon(Icons.info_outline_rounded, color: cs.onSurfaceVariant, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Upload clear photos. JPG, PNG, WEBP accepted. Max 5 MB each.',
+            style: TextStyle(
+                color: cs.onSurfaceVariant, fontSize: 11.5),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -664,7 +596,7 @@ class _SubmitBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    const accent = Color(0xFF00C896);
+    final accent = cs.primary;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -751,239 +683,7 @@ class _SubmitBar extends StatelessWidget {
   }
 }
 
-// ============================================================================
-// _PreviousDocumentCard — Display previously uploaded KYC documents
-// ============================================================================
 
-class _PreviousDocumentCard extends StatefulWidget {
-  const _PreviousDocumentCard({
-    required this.docType,
-    required this.downloadUrl,
-    required this.accentColor,
-    required this.imageUrlProvider,
-    required this.docTypeKey,
-  });
-
-  final String docType;
-  final String downloadUrl;
-  final Color accentColor;
-  final KycImageUrlProvider imageUrlProvider;
-  final String docTypeKey;
-
-  @override
-  State<_PreviousDocumentCard> createState() => _PreviousDocumentCardState();
-}
-
-class _PreviousDocumentCardState extends State<_PreviousDocumentCard> {
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: widget.accentColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
-        color: widget.accentColor.withValues(alpha: 0.05),
-        boxShadow: [
-          BoxShadow(
-            color: widget.accentColor.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Preview area with image
-            _PreviousDocPreviewArea(
-              downloadUrl: widget.downloadUrl,
-              docType: widget.docTypeKey,
-              accentColor: widget.accentColor,
-              imageUrlProvider: widget.imageUrlProvider,
-            ),
-            // Content area
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: widget.accentColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.docType,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Previously uploaded',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: widget.accentColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.check_circle_rounded,
-                    color: widget.accentColor,
-                    size: 22,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// _PreviousDocPreviewArea — Show preview of previously uploaded image
-// Now uses RefreshableKycImageDisplay for automatic URL expiry handling
-// ============================================================================
-
-class _PreviousDocPreviewArea extends StatefulWidget {
-  const _PreviousDocPreviewArea({
-    required this.downloadUrl,
-    required this.docType,
-    required this.accentColor,
-    required this.imageUrlProvider,
-  });
-
-  final String downloadUrl;
-  final String docType;
-  final Color accentColor;
-  final KycImageUrlProvider imageUrlProvider;
-
-  @override
-  State<_PreviousDocPreviewArea> createState() =>
-      _PreviousDocPreviewAreaState();
-}
-
-class _PreviousDocPreviewAreaState extends State<_PreviousDocPreviewArea> {
-  @override
-  Widget build(BuildContext context) {
-    return RefreshableKycImageDisplay(
-      downloadUrl: widget.downloadUrl,
-      docType: widget.docType,
-      height: 140,
-      width: double.infinity,
-      onRefreshUrl: () =>
-          widget.imageUrlProvider.refreshImageUrl(widget.docType),
-    );
-  }
-}
-
-// ============================================================================
-// _FullScreenDocumentViewer — Full-screen image preview
-// ============================================================================
-
-class _FullScreenDocumentViewer extends StatelessWidget {
-  const _FullScreenDocumentViewer({required this.downloadUrl});
-  final String downloadUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black87,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        automaticallyImplyLeading: true,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Center(
-        child: InteractiveViewer(
-          panEnabled: true,
-          minScale: 0.5,
-          maxScale: 4.0,
-          child: Image.network(
-            downloadUrl,
-            fit: BoxFit.contain,
-            headers: const {
-              'Accept': 'image/*',
-            },
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('❌ Full-screen image load failed: $error');
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 60,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Failed to load image',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
-                ],
-              );
-            },
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        value: progress.expectedTotalBytes != null
-                            ? progress.cumulativeBytesLoaded /
-                                progress.expectedTotalBytes!
-                            : null,
-                        valueColor:
-                            const AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Loading image...',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _KycDocInfo {
   const _KycDocInfo({

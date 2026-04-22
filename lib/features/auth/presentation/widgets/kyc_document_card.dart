@@ -2,53 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
+
+import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
+import '../../../media/presentation/widgets/refreshable_kyc_image_display.dart';
 import '../../../media/presentation/widgets/uploaded_image_display.dart';
-
-// ============================================================================
-// KYC Document Status Indicator
-// ============================================================================
-
-class KycDocumentStatusBadge extends StatelessWidget {
-  const KycDocumentStatusBadge({
-    super.key,
-    required this.status,
-  });
-
-  final KycDocumentUploadStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = status.colorScheme(context);
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: colors.backgroundColor,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: colors.borderColor, width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(status.icon, size: 14, color: colors.iconColor),
-          const SizedBox(width: 4),
-          Text(
-            status.label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: colors.textColor,
-              fontWeight: AppFontWeights.semiBold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ============================================================================
-// KYC Document Status Enum
-// ============================================================================
 
 enum KycDocumentUploadStatus {
   notStarted,
@@ -90,42 +48,42 @@ extension KycDocumentStatusExtension on KycDocumentUploadStatus {
   }
 
   KycDocumentStatusColors colorScheme(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     switch (this) {
       case KycDocumentUploadStatus.notStarted:
         return KycDocumentStatusColors(
-          backgroundColor: colors.primaryContainer,
-          textColor: colors.onPrimaryContainer,
-          iconColor: colors.onPrimaryContainer,
-          borderColor: colors.primary,
+          backgroundColor: cs.surfaceContainerHighest,
+          textColor: cs.onSurfaceVariant,
+          iconColor: cs.onSurfaceVariant,
+          borderColor: cs.outlineVariant,
         );
       case KycDocumentUploadStatus.uploading:
         return KycDocumentStatusColors(
-          backgroundColor: colors.primaryContainer,
-          textColor: colors.onPrimaryContainer,
-          iconColor: colors.onPrimaryContainer,
-          borderColor: colors.primary,
+          backgroundColor: cs.secondaryContainer,
+          textColor: cs.onSecondaryContainer,
+          iconColor: cs.onSecondaryContainer,
+          borderColor: cs.secondary,
         );
       case KycDocumentUploadStatus.pending:
         return KycDocumentStatusColors(
-          backgroundColor: const Color(0xFFFFF8E1),
-          textColor: const Color(0xFFF57F17),
-          iconColor: const Color(0xFFF57F17),
-          borderColor: const Color(0xFFFFB300),
+          backgroundColor: AppColors.warning.withValues(alpha: 0.1),
+          textColor: AppColors.warning,
+          iconColor: AppColors.warning,
+          borderColor: AppColors.warning.withValues(alpha: 0.45),
         );
       case KycDocumentUploadStatus.approved:
         return KycDocumentStatusColors(
-          backgroundColor: colors.tertiaryContainer,
-          textColor: colors.onTertiaryContainer,
-          iconColor: colors.onTertiaryContainer,
-          borderColor: colors.tertiary,
+          backgroundColor: AppColors.success.withValues(alpha: 0.1),
+          textColor: AppColors.success,
+          iconColor: AppColors.success,
+          borderColor: AppColors.success.withValues(alpha: 0.45),
         );
       case KycDocumentUploadStatus.rejected:
         return KycDocumentStatusColors(
-          backgroundColor: colors.errorContainer,
-          textColor: colors.onErrorContainer,
-          iconColor: colors.onErrorContainer,
-          borderColor: colors.error,
+          backgroundColor: cs.errorContainer,
+          textColor: cs.onErrorContainer,
+          iconColor: cs.onErrorContainer,
+          borderColor: cs.error,
         );
     }
   }
@@ -145,11 +103,7 @@ class KycDocumentStatusColors {
   final Color borderColor;
 }
 
-// ============================================================================
-// KYC Document Card with Preview
-// ============================================================================
-
-class KycDocumentCard extends StatefulWidget {
+class KycDocumentCard extends StatelessWidget {
   const KycDocumentCard({
     super.key,
     required this.title,
@@ -157,12 +111,15 @@ class KycDocumentCard extends StatefulWidget {
     required this.docType,
     required this.status,
     this.assetId,
+    this.imageUrl,
+    this.documentKey,
     this.imagePath,
-    this.onUploadPressed,
-    this.onViewPressed,
     this.isLoading = false,
     this.uploadProgress,
     this.rejectionReason,
+    this.onCameraPressed,
+    this.onGalleryPressed,
+    this.onRefreshImageUrl,
   });
 
   final String title;
@@ -170,296 +127,360 @@ class KycDocumentCard extends StatefulWidget {
   final String docType;
   final KycDocumentUploadStatus status;
   final String? assetId;
+  final String? imageUrl;
+  final String? documentKey;
   final String? imagePath;
-  final VoidCallback? onUploadPressed;
-  final VoidCallback? onViewPressed;
   final bool isLoading;
   final double? uploadProgress;
   final String? rejectionReason;
+  final VoidCallback? onCameraPressed;
+  final VoidCallback? onGalleryPressed;
+  final Future<String> Function()? onRefreshImageUrl;
 
-  @override
-  State<KycDocumentCard> createState() => _KycDocumentCardState();
-}
+  Widget _getDocIllustration() {
+    final assetPath = switch (docType) {
+      'business_registration' => 'assets/kyc/company_registration.png',
+      'citizenship' => 'assets/kyc/citizenship_card.png',
+      'business_pan' => 'assets/kyc/pan_card.png',
+      _ => '',
+    };
 
-class _KycDocumentCardState extends State<KycDocumentCard> {
-  bool _showPreview = true;
+    if (assetPath.isEmpty) {
+      return const Icon(Icons.description_rounded, size: 24);
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.asset(assetPath, width: 32, height: 32, fit: BoxFit.cover),
+    );
+  }
+
+  bool get _hasPreview =>
+      (imagePath != null && imagePath!.isNotEmpty) ||
+      (assetId != null && assetId!.isNotEmpty) ||
+      (imageUrl != null && imageUrl!.isNotEmpty) ||
+      (documentKey != null && documentKey!.isNotEmpty);
 
   @override
   Widget build(BuildContext context) {
-    final hasPreview = widget.assetId != null || widget.imagePath != null;
-    final showPreviewArea = _showPreview && hasPreview;
+    final colors = status.colorScheme(context);
+    final theme = Theme.of(context);
 
     return Container(
       decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant,
-          width: 1,
+          color: theme.colorScheme.outlineVariant,
         ),
-        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with title and status
-          Container(
+          Padding(
             padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(11),
-                topRight: Radius.circular(11),
-              ),
-            ),
-            child: Column(
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(child: _getDocIllustration()),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: AppFontWeights.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          Text(
-                            widget.title,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: AppFontWeights.bold,
-                            ),
+                          _StatusChip(
+                            label: status == KycDocumentUploadStatus.notStarted
+                                ? 'Action required'
+                                : status.label,
+                            backgroundColor: colors.backgroundColor,
+                            textColor: colors.textColor,
+                            borderColor: colors.borderColor,
+                            icon: status.icon,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.description,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          if (status == KycDocumentUploadStatus.approved)
+                            _StatusChip(
+                              label: 'Uploaded',
+                              backgroundColor: AppColors.success.withValues(
+                                alpha: 0.1,
+                              ),
+                              textColor: AppColors.success,
+                              borderColor: AppColors.success.withValues(
+                                alpha: 0.25,
+                              ),
+                              icon: Icons.check_circle_rounded,
                             ),
-                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    KycDocumentStatusBadge(status: widget.status),
-                  ],
-                ),
-                if (widget.rejectionReason != null && 
-                    widget.rejectionReason!.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: Text(
-                            widget.rejectionReason!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                ],
+                ),
+                Icon(
+                  status == KycDocumentUploadStatus.approved
+                      ? Icons.verified_rounded
+                      : Icons.chevron_right_rounded,
+                  color: status == KycDocumentUploadStatus.approved
+                      ? colors.borderColor
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
               ],
             ),
           ),
-
-          // Preview Section
-          if (showPreviewArea)
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    width: 1,
-                  ),
+          if (isLoading && uploadProgress != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: uploadProgress,
+                  minHeight: 6,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                  valueColor: AlwaysStoppedAnimation(colors.borderColor),
                 ),
               ),
-              child: _buildPreview(),
             ),
-
-          // Actions and Info
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Upload Progress
-                if (widget.isLoading && widget.uploadProgress != null) ...[
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: widget.uploadProgress,
-                      minHeight: 6,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    '${(widget.uploadProgress! * 100).toStringAsFixed(0)}% uploaded',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
-
-                // Action Buttons
-                Row(
+          if (rejectionReason != null && rejectionReason!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.sm,
+              ),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
-                      child: _buildActionButton(
-                        context,
-                        label: widget.status == KycDocumentUploadStatus.notStarted
-                            ? 'Upload Document'
-                            : 'Change Document',
-                        onPressed: widget.isLoading ? null : widget.onUploadPressed,
-                        isPrimary: true,
+                      child: Text(
+                        rejectionReason!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onErrorContainer,
+                        ),
                       ),
                     ),
-                    if (hasPreview) ...[
+                  ],
+                ),
+              ),
+            ),
+          if (status != KycDocumentUploadStatus.notStarted && _hasPreview)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  height: 132,
+                  width: double.infinity,
+                  child: _buildImageWidget(),
+                ),
+              ),
+            ),
+          if (status != KycDocumentUploadStatus.approved)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onCameraPressed,
+                          icon: const Icon(
+                            Icons.photo_camera_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Camera'),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: _buildActionButton(
-                          context,
-                          label: _showPreview ? 'Hide Preview' : 'Show Preview',
-                          onPressed: widget.isLoading
-                              ? null
-                              : () {
-                                setState(() => _showPreview = !_showPreview);
-                              },
-                          isPrimary: false,
+                        child: FilledButton.icon(
+                          onPressed: onGalleryPressed,
+                          icon: const Icon(
+                            Icons.photo_library_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Gallery'),
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                         ),
                       ),
                     ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreview() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            'Document Preview',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: AppFontWeights.semiBold,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              constraints: const BoxConstraints(
-                maxHeight: 240,
-                maxWidth: 300,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Use a clear, straight photo so the details stay readable.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-              color: Theme.of(context).colorScheme.surface,
-              child: _buildImageWidget(),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Tap to expand',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildImageWidget() {
-    // First try to use imagePath if available (local file preview)
-    if (widget.imagePath != null && widget.imagePath!.isNotEmpty) {
+    if (imagePath != null && imagePath!.isNotEmpty) {
       return Image.file(
-        File(widget.imagePath!),
+        File(imagePath!),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Fallback to assetId cache if file fails to load
-          if (widget.assetId != null && widget.assetId!.isNotEmpty) {
-            return UploadedImageDisplay(
-              assetId: widget.assetId,
-              height: 240,
-              width: 300,
-              fit: BoxFit.cover,
-              borderRadius: 0,
-            );
+          if ((assetId != null && assetId!.isNotEmpty) ||
+              (imageUrl != null && imageUrl!.isNotEmpty) ||
+              (documentKey != null && documentKey!.isNotEmpty)) {
+            return _buildNetworkImage();
           }
-          // Final fallback to placeholder
           return Container(
             color: Colors.grey[300],
             child: const Center(
-              child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+              child: Icon(
+                Icons.image_not_supported,
+                size: 24,
+                color: Colors.grey,
+              ),
             ),
           );
         },
       );
     }
 
-    // Fallback to assetId-based display (cached image or CDN)
-    return UploadedImageDisplay(
-      assetId: widget.assetId,
-      height: 240,
-      width: 300,
-      fit: BoxFit.cover,
-      borderRadius: 0,
-      placeholder: Container(
-        color: Colors.grey[300],
-        child: const Center(
-          child: Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
-        ),
-      ),
-    );
+    return _buildNetworkImage();
   }
 
-  Widget _buildActionButton(
-    BuildContext context, {
-    required String label,
-    VoidCallback? onPressed,
-    required bool isPrimary,
-  }) {
-    if (isPrimary) {
-      return ElevatedButton(
-        onPressed: onPressed,
-        child: widget.isLoading
-            ? SizedBox(
-                height: 16,
-                width: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(
-                    Theme.of(context).colorScheme.onPrimary,
-                  ),
-                ),
-              )
-            : Text(label),
-      );
-    } else {
-      return OutlinedButton(
-        onPressed: onPressed,
-        child: Text(label),
+  Widget _buildNetworkImage() {
+    // Use RefreshableKycImageDisplay when refresh callback is available
+    // to handle expired R2 presigned URLs automatically
+    if (onRefreshImageUrl != null && imageUrl != null) {
+      return RefreshableKycImageDisplay(
+        downloadUrl: imageUrl!,
+        docType: docType,
+        onRefreshUrl: onRefreshImageUrl!,
+        height: 132,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        borderRadius: 0,
       );
     }
+
+    // Fallback to standard display for local images or when no refresh available
+    return UploadedImageDisplay(
+      assetId: assetId,
+      image: imageUrl,
+      cacheKey: documentKey,
+      height: 132,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      borderRadius: 0,
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.label,
+    required this.backgroundColor,
+    required this.textColor,
+    required this.borderColor,
+    required this.icon,
+  });
+
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+  final Color borderColor;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: textColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: AppFontWeights.semiBold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

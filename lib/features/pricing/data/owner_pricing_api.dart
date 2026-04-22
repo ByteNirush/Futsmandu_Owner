@@ -2,6 +2,7 @@ import '../../../core/config/owner_api_config.dart';
 import '../../../core/network/owner_api_client.dart';
 
 class OwnerPricingApi {
+  static const _dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   OwnerPricingApi({OwnerApiClient? apiClient})
     : _apiClient = apiClient ?? OwnerApiClient();
 
@@ -41,7 +42,7 @@ class OwnerPricingApi {
       'modifier': modifier,
     };
     if (daysOfWeek != null) {
-      data['days_of_week'] = daysOfWeek;
+      data['days_of_week'] = _toDayNames(daysOfWeek);
     }
     if (startTime != null && startTime.isNotEmpty) {
       data['start_time'] = startTime;
@@ -87,7 +88,7 @@ class OwnerPricingApi {
       data['modifier'] = modifier;
     }
     if (daysOfWeek != null) {
-      data['days_of_week'] = daysOfWeek;
+      data['days_of_week'] = _toDayNames(daysOfWeek);
     }
     if (startTime != null && startTime.isNotEmpty) {
       data['start_time'] = startTime;
@@ -131,6 +132,10 @@ class OwnerPricingApi {
     );
 
     return PricingPreviewResult.fromJson(response);
+  }
+
+  List<String> _toDayNames(List<int> daysOfWeek) {
+    return daysOfWeek.map((d) => _dayNames[d]).toList();
   }
 
   String _toDateOnly(DateTime date) {

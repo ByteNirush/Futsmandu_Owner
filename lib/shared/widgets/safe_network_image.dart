@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import '../../../core/network/token_manager.dart';
+import '../../../core/network/debug_dio_logging_interceptor.dart';
 
 /// A widget that safely loads images from protected sources (like Cloudflare R2).
 /// 
@@ -31,6 +31,7 @@ class SafeNetworkImage extends StatefulWidget {
 class _SafeNetworkImageState extends State<SafeNetworkImage> {
   static final Map<String, Uint8List> _memoryCache = {};
 
+  // ignore: unused_field
   bool _isUsingFallback = false;
   bool _isFallbackLoading = false;
   bool _hasFallbackError = false;
@@ -42,31 +43,31 @@ class _SafeNetworkImageState extends State<SafeNetworkImage> {
     if (_memoryCache.containsKey(widget.url)) {
       _isUsingFallback = true;
       _imageBytes = _memoryCache[widget.url];
+    } else {
+      _loadFallback();
     }
   }
 
   Future<void> _loadFallback() async {
     if (_isFallbackLoading || _hasFallbackError) return;
 
-    setState(() {
-      _isFallbackLoading = true;
-      _isUsingFallback = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isFallbackLoading = true;
+        _isUsingFallback = true;
+      });
+    }
 
     try {
-      final dio = Dio();
-      final tokenManager = TokenManager();
-      final token = await tokenManager.getAccessToken();
+      // Use a clean Dio with NO auth interceptor. R2 presigned URLs already
+      // carry auth in their query params (X-Amz-Signature). Sending a Bearer
+      // token alongside those params causes R2 to return 400 InvalidArgument.
+      final dio = Dio()..interceptors.add(DebugDioLoggingInterceptor());
 
       final response = await dio.get<List<int>>(
         widget.url,
         options: Options(
           responseType: ResponseType.bytes,
-          headers: {
-            'Accept': 'image/*',
-            'User-Agent': 'Flutter',
-            if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-          },
         ),
       );
 
@@ -95,39 +96,17 @@ class _SafeNetworkImageState extends State<SafeNetworkImage> {
       return _buildPlaceholder();
     }
 
-    if (_isUsingFallback) {
-      if (_hasFallbackError) {
-        return _buildPlaceholder(isError: true);
-      }
-      if (_isFallbackLoading || _imageBytes == null) {
-        return _buildPlaceholder(isLoading: true);
-      }
-      return Image.memory(
-        _imageBytes!,
-        width: widget.width,
-        height: widget.height,
-        fit: widget.fit,
-      );
+    if (_hasFallbackError) {
+      return _buildPlaceholder(isError: true);
     }
-
-    return Image.network(
-      widget.url,
+    if (_isFallbackLoading || _imageBytes == null) {
+      return _buildPlaceholder(isLoading: true);
+    }
+    return Image.memory(
+      _imageBytes!,
       width: widget.width,
       height: widget.height,
       fit: widget.fit,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return _buildPlaceholder(isLoading: true);
-      },
-      errorBuilder: (context, error, stackTrace) {
-        // Trigger fallback on error
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_isUsingFallback) {
-            _loadFallback();
-          }
-        });
-        return _buildPlaceholder(isLoading: true);
-      },
     );
   }
 

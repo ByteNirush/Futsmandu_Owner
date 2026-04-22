@@ -5,7 +5,6 @@ part 'staff.g.dart';
 
 /// Represents available staff roles in owner app.
 enum StaffRole {
-  ownerAdmin,
   ownerStaff,
 }
 

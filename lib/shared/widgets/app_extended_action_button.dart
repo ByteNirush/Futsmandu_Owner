@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../core/design_system/app_radius.dart';
+import '../../core/design_system/app_spacing.dart';
 
 class AppExtendedActionButton extends StatelessWidget {
   const AppExtendedActionButton({
@@ -11,6 +12,8 @@ class AppExtendedActionButton extends StatelessWidget {
     required this.onPressed,
     this.heroTag,
     this.tooltip,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   final String label;
@@ -18,6 +21,8 @@ class AppExtendedActionButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Object? heroTag;
   final String? tooltip;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -30,19 +35,21 @@ class AppExtendedActionButton extends StatelessWidget {
       child: FloatingActionButton.extended(
         heroTag: heroTag,
         onPressed: onPressed,
-        backgroundColor: enabled
-            ? colorScheme.primary
-            : colorScheme.surfaceContainerHighest,
-        foregroundColor: enabled
-            ? colorScheme.onPrimary
-            : colorScheme.onSurfaceVariant,
+        backgroundColor: backgroundColor ??
+            (enabled
+                ? colorScheme.primary
+                : colorScheme.surfaceContainerHighest),
+        foregroundColor: foregroundColor ??
+            (enabled
+                ? colorScheme.onPrimary
+                : colorScheme.onSurfaceVariant),
         elevation: enabled ? 8 : 0,
         focusElevation: enabled ? 10 : 0,
         hoverElevation: enabled ? 12 : 0,
         highlightElevation: enabled ? 14 : 0,
         extendedPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 16,
+          horizontal: AppSpacing.screenPadding,
+          vertical: AppSpacing.sm,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -53,7 +60,6 @@ class AppExtendedActionButton extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: textTheme.labelLarge?.copyWith(
-            fontSize: 15,
             fontWeight: AppFontWeights.bold,
             letterSpacing: 0.15,
           ),

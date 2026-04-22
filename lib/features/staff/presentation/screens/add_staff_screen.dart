@@ -57,7 +57,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   );
   static final RegExp _tenDigitPhoneRegex = RegExp(r'^\d{10}$');
 
-  List<String> get _roles => widget.roles ?? const ['OWNER_ADMIN', 'OWNER_STAFF'];
+  List<String> get _roles => widget.roles ?? const ['OWNER_STAFF'];
 
   @override
   void initState() {

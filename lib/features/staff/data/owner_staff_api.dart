@@ -91,8 +91,6 @@ class OwnerStaffMember {
 
   String get roleLabel {
     switch (role) {
-      case 'OWNER_ADMIN':
-        return 'Owner Admin';
       case 'OWNER_STAFF':
         return 'Owner Staff';
       default:
