@@ -114,7 +114,7 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
   Future<void> _deleteCourt(Court court) async {
     if (!_courtsController.canDeleteCourt) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Only OWNER_ADMIN can delete courts.')),
+        const SnackBar(content: Text('Unable to delete court.')),
       );
       return;
     }
