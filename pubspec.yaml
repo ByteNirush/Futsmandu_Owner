@@ -15,7 +15,7 @@ dependencies:
     path: ../futsmandu_design_system
 
   cupertino_icons: ^1.0.8
-  google_fonts: ^6.3.0
+  google_fonts: ^8.0.2
   freezed_annotation: ^3.1.0
   json_annotation: ^4.11.0
   shared_preferences: ^2.3.0
