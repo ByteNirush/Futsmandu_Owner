@@ -138,7 +138,10 @@ class ApiClient {
         return wrappedData;
       }
       if (wrappedData is List<dynamic>) {
-        return <String, dynamic>{'items': wrappedData};
+        return <String, dynamic>{
+          'data': wrappedData,
+          'items': wrappedData,
+        };
       }
       return <String, dynamic>{'value': wrappedData};
     } on DioException catch (error) {
