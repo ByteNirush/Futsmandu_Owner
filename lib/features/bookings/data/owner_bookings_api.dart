@@ -207,14 +207,14 @@ class CourtCalendarSlot {
 
   factory CourtCalendarSlot.fromJson(Map<String, dynamic> json) {
     return CourtCalendarSlot(
-      startTime: (json['startTime'] as String?) ?? '',
-      endTime: (json['endTime'] as String?) ?? '',
+      startTime: (json['start_time'] as String?) ?? '',
+      endTime: (json['end_time'] as String?) ?? '',
       status: (json['status'] as String?) ?? 'AVAILABLE',
       price: json['price'] as num?,
-      displayPrice: json['displayPrice'] as String?,
-      bookingId: json['bookingId'] as String?,
-      playerName: json['playerName'] as String?,
-      bookingType: json['bookingType'] as String?,
+      displayPrice: json['display_price'] as String?,
+      bookingId: json['booking_id'] as String?,
+      playerName: json['player_name'] as String?,
+      bookingType: json['booking_type'] as String?,
     );
   }
 }
@@ -256,7 +256,7 @@ class BookingListItem {
     return BookingListItem(
       id: (json['id'] as String?) ?? '',
       status: (json['status'] as String?) ?? 'CONFIRMED',
-      bookingType: (json['booking_type'] as String?) ?? '',
+      bookingType: (json['booking_source'] as String?) ?? '',
       bookingDate: DateTime.tryParse((json['booking_date'] as String?) ?? ''),
       startTime: (json['start_time'] as String?) ?? '',
       endTime: (json['end_time'] as String?) ?? '',
