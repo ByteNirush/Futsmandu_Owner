@@ -45,7 +45,6 @@ class Owner {
 
   bool get canAccessOwnerWorkspace => isActive && isVerified;
   bool get hasCompletedKyc => isKycApproved;
-  bool get isOwnerAdmin => role?.toUpperCase() == 'OWNER_ADMIN';
   bool get hasUploadedAnyKycDocument => kycDocumentKeys.isNotEmpty;
   bool get hasUploadedAllKycDocuments =>
       _requiredKycDocTypes.every(kycDocumentKeys.containsKey);
@@ -68,7 +67,7 @@ class Owner {
 
   String get displayRole {
     final value = role?.trim();
-    return value == null || value.isEmpty ? 'OWNER_ADMIN' : value;
+    return value == null || value.isEmpty ? 'OWNER' : value;
   }
 
   factory Owner.fromApiJson(Map<String, dynamic> json) {
