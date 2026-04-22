@@ -3,7 +3,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:futsmandu_design_system/core/theme/app_colors.dart' as ds;
 
+import 'refreshable_kyc_image_display.dart';
 import 'uploaded_image_display.dart';
 
 // ============================================================================
@@ -36,6 +38,8 @@ class MediaUploadTile extends StatefulWidget {
     this.accentColor,
     this.isRequired = false,
     this.isAlreadySubmitted = false,
+    this.docType,
+    this.onRefreshUrl,
   });
 
   final String label;
@@ -53,6 +57,8 @@ class MediaUploadTile extends StatefulWidget {
   final Color? accentColor;
   final bool isRequired;
   final bool isAlreadySubmitted;
+  final String? docType;
+  final Future<String> Function()? onRefreshUrl;
 
   bool get hasImage =>
       localImagePath != null ||
@@ -100,7 +106,7 @@ class _MediaUploadTileState extends State<MediaUploadTile>
   }
 
   Color get _accentColor =>
-      widget.accentColor ?? const Color(0xFF00C896);
+      widget.accentColor ?? ds.AppColors.primary;
 
   void _openFullPreview(BuildContext context) {
     if (!widget.hasImage) return;
@@ -170,6 +176,8 @@ class _MediaUploadTileState extends State<MediaUploadTile>
                 accentColor: _accentColor,
                 shimmerAnimation: _shimmerAnimation,
                 onTap: () => _openFullPreview(context),
+                docType: widget.docType,
+                onRefreshUrl: widget.onRefreshUrl,
               )
             else
               _EmptyPreviewArea(
@@ -295,6 +303,8 @@ class _PreviewArea extends StatelessWidget {
     required this.accentColor,
     required this.shimmerAnimation,
     required this.onTap,
+    this.docType,
+    this.onRefreshUrl,
   });
 
   final String? localImagePath;
@@ -306,6 +316,8 @@ class _PreviewArea extends StatelessWidget {
   final Color accentColor;
   final Animation<double> shimmerAnimation;
   final VoidCallback onTap;
+  final String? docType;
+  final Future<String> Function()? onRefreshUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -371,6 +383,17 @@ class _PreviewArea extends StatelessWidget {
         File(localImagePath!),
         fit: BoxFit.cover,
         errorBuilder: (_, _, _) => _fallbackImage(),
+      );
+    }
+    if (networkImageUrl != null && docType != null && onRefreshUrl != null) {
+      return RefreshableKycImageDisplay(
+        downloadUrl: networkImageUrl!,
+        docType: docType!,
+        onRefreshUrl: onRefreshUrl!,
+        height: 180,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        borderRadius: 0,
       );
     }
     return UploadedImageDisplay(

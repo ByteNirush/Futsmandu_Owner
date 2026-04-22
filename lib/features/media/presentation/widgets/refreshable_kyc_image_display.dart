@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 // ============================================================================
 // RefreshableKycImageDisplay
@@ -36,12 +37,15 @@ class _RefreshableKycImageDisplayState
   late DateTime _urlFetchedAt;
   bool _isRefreshing = false;
   String? _urlExpiredMessage;
+  Timer? _expiryCheckTimer;
+  bool _didAutoRefreshAfterError = false;
 
   @override
   void initState() {
     super.initState();
     _currentUrl = widget.downloadUrl;
     _urlFetchedAt = DateTime.now();
+    _startExpiryWatcher();
   }
 
   @override
@@ -51,7 +55,14 @@ class _RefreshableKycImageDisplayState
       _currentUrl = widget.downloadUrl;
       _urlFetchedAt = DateTime.now();
       _urlExpiredMessage = null;
+      _didAutoRefreshAfterError = false;
     }
+  }
+
+  @override
+  void dispose() {
+    _expiryCheckTimer?.cancel();
+    super.dispose();
   }
 
   bool get _isUrlExpiringSoon {
@@ -73,6 +84,7 @@ class _RefreshableKycImageDisplayState
         _urlFetchedAt = DateTime.now();
         _urlExpiredMessage = null;
         _isRefreshing = false;
+        _didAutoRefreshAfterError = false;
       });
     } catch (e) {
       if (!mounted) return;
@@ -81,6 +93,35 @@ class _RefreshableKycImageDisplayState
         _isRefreshing = false;
       });
     }
+  }
+
+  void _startExpiryWatcher() {
+    _expiryCheckTimer?.cancel();
+    _expiryCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted || _isRefreshing) return;
+      if (_isUrlExpiringSoon) {
+        _refreshUrl();
+      }
+    });
+  }
+
+  int? _safeCacheDimension(
+    double value, {
+    required double multiplier,
+    double? fallback,
+  }) {
+    final base = value.isFinite && value > 0
+        ? value
+        : (fallback != null && fallback.isFinite && fallback > 0
+              ? fallback
+              : null);
+
+    if (base == null) return null;
+
+    final scaled = base * multiplier;
+    if (!scaled.isFinite || scaled <= 0) return null;
+
+    return scaled.round();
   }
 
   void _showFullPreview() {
@@ -98,7 +139,11 @@ class _RefreshableKycImageDisplayState
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                       const SizedBox(height: 16),
                       const Text('Failed to load image'),
                       const SizedBox(height: 16),
@@ -119,8 +164,22 @@ class _RefreshableKycImageDisplayState
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final viewportWidth = MediaQuery.sizeOf(context).width;
+    final cacheHeight = _safeCacheDimension(
+      widget.height,
+      multiplier: 1.5,
+    );
+    final cacheWidth = _safeCacheDimension(
+      widget.width,
+      multiplier: 1.2,
+      fallback: viewportWidth,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
           onTap: _showFullPreview,
@@ -128,7 +187,7 @@ class _RefreshableKycImageDisplayState
             height: widget.height,
             width: widget.width,
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(widget.borderRadius),
             ),
             child: Stack(
@@ -141,24 +200,35 @@ class _RefreshableKycImageDisplayState
                   child: Image.network(
                     _currentUrl,
                     fit: widget.fit,
-                    cacheHeight: (widget.height * 1.5).toInt(),
-                    cacheWidth: (widget.width * 1.2).toInt(),
+                    gaplessPlayback: true,
+                    cacheHeight: cacheHeight,
+                    cacheWidth: cacheWidth,
                     errorBuilder: (context, error, stackTrace) {
                       debugPrint(
                           '❌ Image load error: $error for ${widget.docType}');
+                      if (!_didAutoRefreshAfterError && !_isRefreshing) {
+                        _didAutoRefreshAfterError = true;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) {
+                            _refreshUrl();
+                          }
+                        });
+                      }
                       return Container(
-                        color: Colors.grey[200],
+                        color: cs.surfaceContainerHighest,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.image_not_supported_outlined,
-                                size: 48, color: Colors.grey[400]),
+                            Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 48,
+                              color: cs.onSurfaceVariant,
+                            ),
                             const SizedBox(height: 8),
                             Text(
                               'Failed to load image',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
+                              style: textTheme.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -200,14 +270,13 @@ class _RefreshableKycImageDisplayState
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orangeAccent,
+                        color: cs.tertiary,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text(
+                      child: Text(
                         'URL Expiring Soon',
                         style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
+                          color: cs.onTertiary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -241,21 +310,18 @@ class _RefreshableKycImageDisplayState
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: cs.errorContainer,
               borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.red.shade200),
+              border: Border.all(color: cs.error.withValues(alpha: 0.5)),
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red.shade700, size: 16),
+                Icon(Icons.error_outline, color: cs.error, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _urlExpiredMessage!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.red.shade700,
-                    ),
+                    style: textTheme.bodySmall?.copyWith(color: cs.error),
                   ),
                 ),
               ],
@@ -267,21 +333,21 @@ class _RefreshableKycImageDisplayState
   }
 
   Widget _buildOverlayButton() {
+    final cs = Theme.of(context).colorScheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        color: Colors.black38,
+        color: cs.scrim.withValues(alpha: 0.5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.open_in_full_rounded, size: 12, color: Colors.white),
-            SizedBox(width: 4),
+          children: [
+            Icon(Icons.open_in_full_rounded, size: 12, color: cs.onPrimary),
+            const SizedBox(width: 4),
             Text(
               'View',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 10,
+                color: cs.onPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
