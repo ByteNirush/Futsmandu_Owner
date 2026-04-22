@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../core/design_system/app_radius.dart';
+import '../../core/design_system/app_spacing.dart';
 
 class AppExtendedActionButton extends StatelessWidget {
   const AppExtendedActionButton({
@@ -47,8 +48,8 @@ class AppExtendedActionButton extends StatelessWidget {
         hoverElevation: enabled ? 12 : 0,
         highlightElevation: enabled ? 14 : 0,
         extendedPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 16,
+          horizontal: AppSpacing.screenPadding,
+          vertical: AppSpacing.sm,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -59,7 +60,6 @@ class AppExtendedActionButton extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: textTheme.labelLarge?.copyWith(
-            fontSize: 15,
             fontWeight: AppFontWeights.bold,
             letterSpacing: 0.15,
           ),

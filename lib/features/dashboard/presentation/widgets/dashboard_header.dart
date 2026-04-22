@@ -45,12 +45,6 @@ class DashboardHeader extends StatelessWidget {
               ],
             ),
           ),
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: colorScheme.primaryContainer,
-            foregroundColor: colorScheme.onPrimaryContainer,
-            child: const Icon(Icons.storefront_rounded, size: 20),
-          ),
         ],
       ),
     );
