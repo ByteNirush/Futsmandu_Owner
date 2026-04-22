@@ -10,6 +10,7 @@ import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/otp_verification_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/reset_password_screen.dart';
+import 'features/auth/presentation/screens/kyc_intro_screen.dart';
 import 'features/auth/presentation/screens/upload_documents_screen.dart';
 
 void main() {
@@ -53,11 +54,11 @@ class _FutsmanduAppState extends State<FutsmanduApp> {
             '/login': (_) => LoginScreen(authController: _authController),
             '/register': (_) => RegisterScreen(authController: _authController),
             '/forgot-password': (_) => const ForgotPasswordScreen(),
-            '/otp-verification': (_) => OtpVerificationScreen(
-              authController: _authController,
-            ),
+            '/otp-verification': (_) =>
+                OtpVerificationScreen(authController: _authController),
             '/reset-password': (_) => const ResetPasswordScreen(),
-            '/upload-documents': (_) => const UploadDocumentsScreen(),
+            '/upload-documents': (_) => const KycIntroScreen(),
+            '/upload-documents/form': (_) => const UploadDocumentsScreen(),
             '/shell': (_) => OwnerShellScreen(
               authController: _authController,
               themeProvider: _themeProvider,
