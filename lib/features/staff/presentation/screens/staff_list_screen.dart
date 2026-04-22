@@ -83,7 +83,7 @@ class _StaffListScreenState extends State<StaffListScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (final role in const ['OWNER_ADMIN', 'OWNER_STAFF'])
+              for (final role in const ['OWNER_STAFF'])
                 RadioListTile<String>(value: role, title: Text(role)),
             ],
           ),
