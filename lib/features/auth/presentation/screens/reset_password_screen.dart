@@ -79,6 +79,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               AppInputField(
                 controller: _newPasswordController,
                 label: 'New Password',
+                showLabelAboveField: true,
                 hint: 'Create new password',
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,
@@ -88,6 +89,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               AppInputField(
                 controller: _confirmPasswordController,
                 label: 'Confirm Password',
+                showLabelAboveField: true,
                 hint: 'Confirm new password',
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,

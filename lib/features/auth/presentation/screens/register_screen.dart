@@ -101,7 +101,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: Icons.person_outline,
                     validator: OwnerAuthValidators.validateName,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xs),
                   AppInputField(
                     controller: _businessNameController,
                     label: 'Business name',
@@ -110,7 +110,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: Icons.storefront_outlined,
                     validator: OwnerAuthValidators.validateBusinessName,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xs),
                   AppInputField(
                     controller: _emailController,
                     label: 'Email',
@@ -120,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     keyboardType: TextInputType.emailAddress,
                     validator: OwnerAuthValidators.validateEmail,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xs),
                   AppInputField(
                     controller: _phoneController,
                     label: 'Phone',
@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     keyboardType: TextInputType.phone,
                     validator: OwnerAuthValidators.validateNepalPhone,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xs),
                   AppInputField(
                     controller: _passwordController,
                     label: 'Password',
@@ -140,7 +140,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     isPassword: true,
                     validator: OwnerAuthValidators.validatePassword,
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.xs),
                   AppInputField(
                     controller: _confirmPasswordController,
                     label: 'Confirm password',
@@ -151,33 +151,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.done,
                     validator: _validateConfirmPassword,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.sm),
                   AppButton(
                     label: 'Create account',
                     isLoading: widget.authController.isBusy,
                     onPressed: widget.authController.isBusy ? null : _register,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.sm),
                   Center(
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Already have an account? ',
+                          'Already have an account?',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Text(
-                            'Login',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Login'),
                         ),
                       ],
                     ),
