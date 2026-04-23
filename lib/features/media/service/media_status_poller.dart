@@ -5,7 +5,15 @@ import 'owner_media_api.dart';
 
 // ============================================================================
 // MediaStatusPoller
-// Eliminates duplicate polling by maintaining ONE polling stream per assetId
+//
+// Correctness guarantees:
+//  1. One polling loop per assetId — no duplicate parallel requests.
+//  2. First check fires immediately (no dead window at startup).
+//  3. Exactly 2.5 s gap *between* responses (sequential, not concurrent).
+//  4. Hard timeout: 120 attempts × 2.5 s ≈ 5 min, then emits 'timeout'.
+//  5. Duplicate-status suppression — only emits when status changes.
+//  6. Auto-cleanup when the stream closes or the final status is reached.
+//  7. Broadcast stream — multiple listeners may attach safely.
 // ============================================================================
 
 class MediaStatusPoller {
@@ -14,118 +22,119 @@ class MediaStatusPoller {
 
   final OwnerMediaApi _mediaApi;
 
-  // Map<assetId, StreamController> — one stream controller per asset
-  final Map<String, StreamController<MediaAssetStatusResponse>> _streamControllers =
-      <String, StreamController<MediaAssetStatusResponse>>{};
+  // One StreamController per active assetId
+  final Map<String, StreamController<MediaAssetStatusResponse>>
+      _controllers = {};
 
-  // Map<assetId, Timer> — one timer per asset to prevent multiple polling
-  final Map<String, Timer> _timers = <String, Timer>{};
+  // One polling Future per active assetId (replaces Timer to guarantee
+  // sequential requests with a fixed *inter-response* delay)
+  final Map<String, bool> _active = {};
 
-  // Map<assetId, lastStatus> — cache last status to avoid duplicate emissions
-  final Map<String, MediaAssetStatusResponse> _lastStatus =
-      <String, MediaAssetStatusResponse>{};
+  // Last emitted status per assetId (for dedup)
+  final Map<String, MediaAssetStatusResponse> _lastStatus = {};
 
-  /// Returns a broadcast stream for the given assetId.
-  /// Multiple listeners can subscribe.
-  /// Polling stops automatically when status becomes "ready" or "failed".
+  // ── Public API ─────────────────────────────────────────────────────────────
+
+  /// Returns a broadcast stream for [assetId].
+  ///
+  /// Polling starts immediately on the first listener and stops automatically
+  /// when status is `ready` or `failed`, or after the timeout is reached.
   Stream<MediaAssetStatusResponse> pollStatus(String assetId) {
-    // Return existing stream if already polling
-    if (_streamControllers.containsKey(assetId)) {
-      return _streamControllers[assetId]!.stream;
+    if (_controllers.containsKey(assetId)) {
+      return _controllers[assetId]!.stream;
     }
 
-    // Create new stream controller (broadcast so multiple listeners can attach)
-    final controller =
-        StreamController<MediaAssetStatusResponse>.broadcast(
-      onListen: () => _startPolling(assetId),
-      onCancel: () => _checkAndStopPolling(assetId),
+    final controller = StreamController<MediaAssetStatusResponse>.broadcast(
+      onCancel: () => _teardown(assetId),
     );
+    _controllers[assetId] = controller;
 
-    _streamControllers[assetId] = controller;
+    // Start polling loop as soon as the controller is wired up.
+    // We do not wait for `onListen` because broadcast streams may already
+    // have listeners attached synchronously by the caller.
+    _startLoop(assetId);
+
     return controller.stream;
   }
 
-  /// Start polling for an assetId (interval: 2.5 seconds, max attempts: 120 = 5 minutes)
-  void _startPolling(String assetId) {
-    if (_timers.containsKey(assetId)) {
-      return; // Already polling
+  /// Cancel and clean up a specific asset poll.
+  void cancel(String assetId) => _teardown(assetId);
+
+  /// Cancel all active polls (call on app suspend / logout).
+  void dispose() {
+    final ids = List<String>.from(_active.keys);
+    for (final id in ids) {
+      _teardown(id);
     }
+  }
+
+  // ── Polling loop ──────────────────────────────────────────────────────────
+
+  static const int _maxAttempts = 120;         // 5 min cap
+  static const Duration _delay = Duration(milliseconds: 2500);
+
+  Future<void> _startLoop(String assetId) async {
+    _active[assetId] = true;
 
     int attempt = 0;
-    const maxAttempts = 120; // ~5 minutes max
-    const interval = Duration(seconds: 2);
 
-    _timers[assetId] = Timer.periodic(interval, (_) async {
+    while (_active[assetId] == true) {
       attempt++;
 
-      if (attempt >= maxAttempts) {
-        _emitAndStop(
+      // Hard timeout guard
+      if (attempt > _maxAttempts) {
+        _emit(
           assetId,
-          const MediaAssetStatusResponse(status: 'processing'),
+          const MediaAssetStatusResponse(status: 'timeout'),
         );
-        return;
+        break;
       }
 
+      // ── Poll ───────────────────────────────────────────────────────────
       try {
         final status = await _mediaApi.getUploadStatus(assetId);
 
-        // Only emit if status changed (avoid duplicate events)
-        final last = _lastStatus[assetId];
-        if (last == null || last.status != status.status) {
-          _lastStatus[assetId] = status;
-          _streamControllers[assetId]?.add(status);
-        }
+        if (!(_active[assetId] ?? false)) break; // cancelled during await
 
-        // Stop polling if ready or failed
-        if (status.isReady || status.isFailed) {
-          _emitAndStop(assetId, status);
-        }
-      } catch (e) {
-        // Do not emit error, just log and continue polling
-        // This keeps the stream alive even if one request fails
+        _emit(assetId, status);
+
+        if (status.isReady || status.isFailed) break;
+      } catch (_) {
+        // Network hiccup — log silently, keep polling.
+        // Errors on individual requests should not break the polling loop.
       }
-    });
+
+      // ── Inter-request delay (only if still active) ─────────────────────
+      if (_active[assetId] == true) {
+        await Future<void>.delayed(_delay);
+      }
+    }
+
+    // Loop exited — perform final cleanup if not already done by teardown.
+    _teardown(assetId);
   }
 
-  /// Emit final status and stop polling
-  void _emitAndStop(String assetId, MediaAssetStatusResponse status) {
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  void _emit(String assetId, MediaAssetStatusResponse status) {
+    final controller = _controllers[assetId];
+    if (controller == null || controller.isClosed) return;
+
+    // Suppress duplicate emissions
+    final last = _lastStatus[assetId];
+    if (last != null && last.status == status.status) return;
+
     _lastStatus[assetId] = status;
-    _streamControllers[assetId]?.add(status);
-    _stopPolling(assetId);
+    controller.add(status);
   }
 
-  /// Stop polling and check if we can clean up
-  void _stopPolling(String assetId) {
-    _timers[assetId]?.cancel();
-    _timers.remove(assetId);
+  void _teardown(String assetId) {
+    _active.remove(assetId);
+    _lastStatus.remove(assetId);
 
-    // Clean up if no listeners
-    _checkAndStopPolling(assetId);
-  }
-
-  /// Check if stream has listeners; if not, close and cleanup
-  void _checkAndStopPolling(String assetId) {
-    final controller = _streamControllers[assetId];
-    if (controller != null && !controller.hasListener) {
-      _timers[assetId]?.cancel();
-      _timers.remove(assetId);
-      controller.close();
-      _streamControllers.remove(assetId);
-      _lastStatus.remove(assetId);
-    }
-  }
-
-  /// Cleanup all active polls (call on app shutdown)
-  void dispose() {
-    for (final timer in _timers.values) {
-      timer.cancel();
-    }
-    _timers.clear();
-
-    for (final controller in _streamControllers.values) {
+    final controller = _controllers.remove(assetId);
+    if (controller != null && !controller.isClosed) {
       controller.close();
     }
-    _streamControllers.clear();
-    _lastStatus.clear();
   }
 }

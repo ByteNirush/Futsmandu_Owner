@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../model/media_upload_models.dart';
 import 'media_status_poller.dart';
 import 'owner_media_api.dart';
@@ -192,28 +194,39 @@ class MediaUploadService {
     );
 
     if (pollUntilReady && confirm.assetId != null) {
-      onStatusMessage?.call('Waiting for processing…');
-      status = await _pollUntilReady(confirm.assetId!);
+      onStatusMessage?.call('Processing image…');
+      status = await _pollUntilReady(
+        assetId: confirm.assetId!,
+        onStatusMessage: onStatusMessage,
+      );
     }
 
+    final isReady = status.isReady;
     onStatusMessage?.call(
-      status.isReady ? 'Ready.' : 'Upload complete.',
+      isReady ? 'SUCCESS: Image ready.' : 'Upload complete.',
     );
+
+    // Prefer processed WebP URL; fall back to presign-step CDN URL.
+    final bestUrl = status.webpUrl ?? uploadUrlResponse.cdnUrl;
 
     final result = MediaUploadResult(
       key: uploadUrlResponse.key,
       cdnUrl: uploadUrlResponse.cdnUrl,
+      webpUrl: status.webpUrl,
+      thumbUrl: status.thumbUrl,
       confirmMessage: confirm.message,
       assetId: confirm.assetId,
       status: status,
     );
 
-    // Cache the uploaded image immediately for instant UI display
+    // Update cache with the best available URL after processing.
     if (confirm.assetId != null) {
       uploadedImageCache.save(
         assetId: confirm.assetId!,
         key: uploadUrlResponse.key,
-        cdnUrl: uploadUrlResponse.cdnUrl,
+        cdnUrl: bestUrl,
+        webpUrl: status.webpUrl,
+        thumbUrl: status.thumbUrl,
         imageBytes: bytes,
       );
     }
@@ -221,19 +234,70 @@ class MediaUploadService {
     return result;
   }
 
-  Future<MediaAssetStatusResponse> _pollUntilReady(String assetId) async {
-    final statusStream = _statusPoller.pollStatus(assetId);
-    
-    // Get the first status (or the current one)
-    try {
-      final status = await statusStream.firstWhere(
-        (s) => s.isReady || s.isFailed,
-        orElse: () => const MediaAssetStatusResponse(status: 'processing'),
-      );
-      return status;
-    } catch (_) {
-      return const MediaAssetStatusResponse(status: 'processing');
+  // ── Polling helper ──────────────────────────────────────────────────────
+
+  /// Drives the poller until status is terminal (ready / failed / timeout).
+  ///
+  /// Safety net: a 6-minute [Future.timeout] wraps the stream subscription so
+  /// the call *always* returns even if the poller loop stalls unexpectedly.
+  Future<MediaAssetStatusResponse> _pollUntilReady({
+    required String assetId,
+    void Function(String message)? onStatusMessage,
+  }) async {
+    final completer = Completer<MediaAssetStatusResponse>();
+    StreamSubscription<MediaAssetStatusResponse>? sub;
+
+    void complete(MediaAssetStatusResponse s) {
+      if (!completer.isCompleted) {
+        sub?.cancel();
+        completer.complete(s);
+      }
     }
+
+    sub = _statusPoller.pollStatus(assetId).listen(
+      (status) {
+        // Forward intermediate progress messages to the UI.
+        if (status.isProcessing) {
+          final pct = status.progress;
+          onStatusMessage?.call(
+            pct != null
+                ? 'Processing\u2026 $pct%'
+                : 'Processing\u2026',
+          );
+        }
+
+        // Resolve on any terminal status.
+        if (status.isReady || status.isFailed) {
+          complete(status);
+        } else if (status.status == 'timeout') {
+          // Poller hit its hard cap; surface gracefully.
+          complete(const MediaAssetStatusResponse(status: 'processing'));
+        }
+      },
+      onError: (_) {
+        // Stream error should not surface to the UI as a crash.
+        if (!completer.isCompleted) {
+          complete(const MediaAssetStatusResponse(status: 'processing'));
+        }
+      },
+      onDone: () {
+        // Stream closed before a terminal event — treat as processing.
+        if (!completer.isCompleted) {
+          complete(const MediaAssetStatusResponse(status: 'processing'));
+        }
+      },
+      cancelOnError: false,
+    );
+
+    // Absolute safety net: if nothing resolves in 6 min, unblock the caller.
+    return completer.future.timeout(
+      const Duration(minutes: 6),
+      onTimeout: () {
+        sub?.cancel();
+        _statusPoller.cancel(assetId);
+        return const MediaAssetStatusResponse(status: 'processing');
+      },
+    );
   }
 
   /// Fetch all previously uploaded KYC documents for the owner

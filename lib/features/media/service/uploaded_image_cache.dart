@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:crypto/crypto.dart';
 
 // ============================================================================
@@ -11,6 +12,8 @@ class UploadedImage {
     required this.assetId,
     required this.key,
     this.cdnUrl,
+    this.webpUrl,
+    this.thumbUrl,
     this.temporaryBase64,
     required this.uploadedAt,
   });
@@ -18,17 +21,22 @@ class UploadedImage {
   final String assetId;
   final String key;
   final String? cdnUrl;
-  
-  /// Base64-encoded image data for instant display while CDN is being processed
+
+  /// Processed WebP CDN URL — preferred for display (smaller, faster).
+  final String? webpUrl;
+
+  /// 320×240 thumbnail CDN URL — use for gallery grids.
+  final String? thumbUrl;
+
+  /// Base64-encoded image data for instant display while CDN is being processed.
   final String? temporaryBase64;
-  
+
   final DateTime uploadedAt;
 
-  /// Get display URL: prefer CDN URL, fallback to temporary
+  /// Best display URL: webp > raw CDN > temporary base64.
   String? get displayUrl {
-    if (cdnUrl != null && cdnUrl!.isNotEmpty) {
-      return cdnUrl;
-    }
+    if (webpUrl != null && webpUrl!.isNotEmpty) return webpUrl;
+    if (cdnUrl != null && cdnUrl!.isNotEmpty) return cdnUrl;
     if (temporaryBase64 != null && temporaryBase64!.isNotEmpty) {
       return 'data:image/jpeg;base64,$temporaryBase64';
     }
@@ -54,11 +62,17 @@ class UploadedImageCache {
 
   final Map<String, UploadedImage> _cache = <String, UploadedImage>{};
 
-  /// Store an uploaded image with optional temporary base64 for instant display
+  /// Bumped on every [save] / [updateCdnUrl] call so widgets can listen and
+  /// rebuild reactively without polling.
+  final ValueNotifier<int> revisionNotifier = ValueNotifier<int>(0);
+
+  /// Store an uploaded image with optional temporary base64 for instant display.
   void save({
     required String assetId,
     required String key,
     String? cdnUrl,
+    String? webpUrl,
+    String? thumbUrl,
     List<int>? imageBytes,
   }) {
     String? tempBase64;
@@ -70,9 +84,12 @@ class UploadedImageCache {
       assetId: assetId,
       key: key,
       cdnUrl: cdnUrl,
+      webpUrl: webpUrl,
+      thumbUrl: thumbUrl,
       temporaryBase64: tempBase64,
       uploadedAt: DateTime.now(),
     );
+    revisionNotifier.value++;
   }
 
   /// Retrieve cached uploaded image
@@ -88,17 +105,20 @@ class UploadedImageCache {
     return null;
   }
 
-  /// Update CDN URL after it becomes available
-  void updateCdnUrl(String assetId, String cdnUrl) {
+  /// Update CDN / webp URLs after processing completes.
+  void updateCdnUrl(String assetId, String cdnUrl, {String? webpUrl, String? thumbUrl}) {
     final cached = _cache[assetId];
     if (cached != null) {
       _cache[assetId] = UploadedImage(
         assetId: cached.assetId,
         key: cached.key,
         cdnUrl: cdnUrl,
+        webpUrl: webpUrl ?? cached.webpUrl,
+        thumbUrl: thumbUrl ?? cached.thumbUrl,
         temporaryBase64: cached.temporaryBase64,
         uploadedAt: cached.uploadedAt,
       );
+      revisionNotifier.value++;
     }
   }
 
