@@ -13,9 +13,13 @@ import '../../service/uploaded_image_cache.dart';
 // 2. If cached → use base64 data URL (instant)
 // 3. If CDN URL → use network image (after processing)
 // 4. Fallback to placeholder if nothing available
+//
+// Reactive: subscribes to uploadedImageCache.revisionNotifier so the widget
+// automatically upgrades from the base64 preview to the CDN/WebP URL when
+// polling completes — no manual refresh needed.
 // ============================================================================
 
-class UploadedImageDisplay extends StatelessWidget {
+class UploadedImageDisplay extends StatefulWidget {
   const UploadedImageDisplay({
     super.key,
     this.image,
@@ -57,18 +61,41 @@ class UploadedImageDisplay extends StatelessWidget {
   final String? cacheKey;
 
   @override
+  State<UploadedImageDisplay> createState() => _UploadedImageDisplayState();
+}
+
+class _UploadedImageDisplayState extends State<UploadedImageDisplay> {
+  @override
+  void initState() {
+    super.initState();
+    // Subscribe so the widget upgrades from base64 preview → CDN/WebP URL
+    // the moment polling completes and the cache is revised.
+    uploadedImageCache.revisionNotifier.addListener(_onCacheRevised);
+  }
+
+  @override
+  void dispose() {
+    uploadedImageCache.revisionNotifier.removeListener(_onCacheRevised);
+    super.dispose();
+  }
+
+  void _onCacheRevised() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Try to find image from cache first
     UploadedImage? cached;
 
-    if (assetId != null && assetId!.isNotEmpty) {
-      cached = uploadedImageCache.get(assetId!);
-    } else if (cacheKey != null && cacheKey!.isNotEmpty) {
-      cached = uploadedImageCache.getByKey(cacheKey!);
+    if (widget.assetId != null && widget.assetId!.isNotEmpty) {
+      cached = uploadedImageCache.get(widget.assetId!);
+    } else if (widget.cacheKey != null && widget.cacheKey!.isNotEmpty) {
+      cached = uploadedImageCache.getByKey(widget.cacheKey!);
     }
 
     // Prioritize: cached display URL > provided image > placeholder
-    final displayUrl = cached?.displayUrl ?? image;
+    final displayUrl = cached?.displayUrl ?? widget.image;
 
     if (displayUrl == null || displayUrl.isEmpty) {
       return _buildPlaceholder();
@@ -82,20 +109,19 @@ class UploadedImageDisplay extends StatelessWidget {
       final isBase64 = url.startsWith('data:');
 
       return ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
         child: SizedBox(
-          height: height,
-          width: width,
+          height: widget.height,
+          width: widget.width,
           child: isBase64
               ? Image.memory(
-                  // Decode base64
                   _decodeBase64(url),
-                  fit: fit,
+                  fit: widget.fit,
                   errorBuilder: _onImageError,
                 )
               : _NetworkImageWithCleanClient(
                   url: url,
-                  fit: fit,
+                  fit: widget.fit,
                   errorBuilder: _onImageError,
                 ),
         ),
@@ -106,12 +132,12 @@ class UploadedImageDisplay extends StatelessWidget {
   }
 
   Widget _buildPlaceholder() {
-    return placeholder ??
+    return widget.placeholder ??
         ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
+          borderRadius: BorderRadius.circular(widget.borderRadius),
           child: Container(
-            height: height,
-            width: width,
+            height: widget.height,
+            width: widget.width,
             color: Colors.grey[300],
             child: Center(
               child: Icon(
@@ -129,19 +155,17 @@ class UploadedImageDisplay extends StatelessWidget {
     Object error,
     StackTrace? stackTrace,
   ) {
-    if (errorBuilder != null) {
-      return errorBuilder!(context, error, stackTrace);
+    if (widget.errorBuilder != null) {
+      return widget.errorBuilder!(context, error, stackTrace);
     }
     return _buildPlaceholder();
   }
 
   static Uint8List _decodeBase64(String url) {
-    // Remove data URI prefix if present
     var base64String = url;
     if (url.contains(',')) {
       base64String = url.split(',')[1];
     }
-    // Remove any whitespace
     base64String = base64String.replaceAll(RegExp(r'\s'), '');
     return Uint8List.fromList(base64Decode(base64String));
   }

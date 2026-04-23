@@ -77,12 +77,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               AppInputField(
                 controller: _emailController,
                 label: 'Email',
+                showLabelAboveField: true,
                 hint: 'Enter your email',
                 prefixIcon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
                 validator: _validateEmail,
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               AppButton(
                 label: 'Send Reset Link',
                 isLoading: _isSending,

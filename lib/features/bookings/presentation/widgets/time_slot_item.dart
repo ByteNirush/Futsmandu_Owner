@@ -45,7 +45,7 @@ class TimeSlotItem extends StatelessWidget {
           children: [
             // Timeline Column
             SizedBox(
-              width: 60,
+              width: 18,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -67,14 +67,14 @@ class TimeSlotItem extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: AppSpacing.xs),
             
             // Timeline Div
             Column(
               children: [
                 Container(
-                  width: 12,
-                  height: 12,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(
                     color: status == SlotStatus.available
                         ? colorScheme.surface
@@ -98,12 +98,12 @@ class TimeSlotItem extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: AppSpacing.xs),
 
             // Content Card
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -112,7 +112,7 @@ class TimeSlotItem extends StatelessWidget {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeInOut,
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: const EdgeInsets.all(AppSpacing.sm),
                       decoration: BoxDecoration(
                         color: _getBackgroundColor(colorScheme),
                         borderRadius: BorderRadius.circular(AppSpacing.radius),
@@ -127,21 +127,26 @@ class TimeSlotItem extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                _getTitle(),
-                                style: textTheme.titleSmall?.copyWith(
-                                  color: _getTextColor(colorScheme),
-                                  fontWeight: AppFontWeights.semiBold,
+                              Expanded(
+                                child: Text(
+                                  _getTitle(),
+                                  style: textTheme.titleSmall?.copyWith(
+                                    color: _getTextColor(colorScheme),
+                                    fontWeight: AppFontWeights.semiBold,
+                                  ),
                                 ),
                               ),
                               if (price != null && status == SlotStatus.available)
-                                Text(
-                                  price!,
-                                  style: textTheme.labelMedium?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: AppFontWeights.bold,
+                                Padding(
+                                  padding: const EdgeInsets.only(left: AppSpacing.xs),
+                                  child: Text(
+                                    price!,
+                                    style: textTheme.labelMedium?.copyWith(
+                                      color: colorScheme.primary,
+                                      fontWeight: AppFontWeights.bold,
+                                    ),
                                   ),
                                 ),
                             ],

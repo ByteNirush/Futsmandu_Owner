@@ -177,9 +177,23 @@ class MediaConfirmUploadResponse {
 // ---------------------------------------------------------------------------
 
 class MediaAssetStatusResponse {
-  const MediaAssetStatusResponse({required this.status});
+  const MediaAssetStatusResponse({
+    required this.status,
+    this.progress,
+    this.webpUrl,
+    this.thumbUrl,
+  });
 
   final String status;
+
+  /// Processing progress 0–100, if provided by the backend.
+  final int? progress;
+
+  /// CDN URL of the processed WebP variant (available when status = ready).
+  final String? webpUrl;
+
+  /// CDN URL of the 320×240 thumbnail (available when status = ready).
+  final String? thumbUrl;
 
   bool get isReady {
     final normalized = status.toLowerCase();
@@ -191,6 +205,13 @@ class MediaAssetStatusResponse {
   factory MediaAssetStatusResponse.fromJson(Map<String, dynamic> json) {
     return MediaAssetStatusResponse(
       status: (json['status'] as String?) ?? 'processing',
+      progress: json['progress'] as int?,
+      // Backend returns camelCase: webpKey, thumbUrl
+      // We surface the fully-qualified CDN URLs directly.
+      webpUrl:  (json['webpUrl']  as String?) ??
+                (json['webp_url'] as String?),
+      thumbUrl: (json['thumbUrl'] as String?) ??
+                (json['thumb_url'] as String?),
     );
   }
 }
@@ -206,6 +227,8 @@ class MediaUploadResult {
     required this.status,
     this.cdnUrl,
     this.assetId,
+    this.webpUrl,
+    this.thumbUrl,
   });
 
   final String key;
@@ -214,10 +237,16 @@ class MediaUploadResult {
   final String? cdnUrl;
   final String? assetId;
 
+  /// Processed WebP CDN URL (set after polling completes with status = ready).
+  final String? webpUrl;
+
+  /// 320×240 thumbnail CDN URL (set after polling completes with status = ready).
+  final String? thumbUrl;
+
   bool get isReady => status.isReady;
-  
-  /// Convenience getter for CDN URL (alias for cdnUrl)
-  String? get imageUrl => cdnUrl;
+
+  /// Best available display URL: prefer processed WebP > raw CDN URL.
+  String? get imageUrl => webpUrl ?? cdnUrl;
 }
 
 // ---------------------------------------------------------------------------
