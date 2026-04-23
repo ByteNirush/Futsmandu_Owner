@@ -143,4 +143,11 @@ class OwnerApiConfig {
       '$mediaEndpoint/asset?assetId=$assetId';
 
   static const String mediaKycListEndpoint = '$mediaEndpoint/kyc';
+
+  // ---------------------------------------------------------------------------
+  // MEDIA - VENUE GALLERY LIST
+  // ---------------------------------------------------------------------------
+
+  static String mediaVenueGalleryEndpoint(String venueId) =>
+      '$mediaEndpoint/venues/$venueId/gallery';
 }
