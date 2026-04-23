@@ -7,6 +7,7 @@ import '../../../../core/design_system/app_radius.dart';
 import '../../../../shared/widgets/safe_network_image.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../courts/presentation/screens/create_court_screen.dart';
+import '../../../media/service/uploaded_image_cache.dart';
 import '../../domain/models/court_models.dart';
 import '../../domain/models/venue_models.dart';
 import '../controllers/venue_courts_controller.dart';
@@ -23,17 +24,39 @@ class VenueDetailsScreen extends StatefulWidget {
 
 class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
   final VenueCourtsController _courtsController = VenueCourtsController();
+  late final PageController _pageController;
+  int _currentPage = 0;
 
   @override
   void initState() {
     super.initState();
     _courtsController.loadCourts(widget.venue.id);
+    _pageController = PageController();
   }
 
   @override
   void dispose() {
     _courtsController.dispose();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  /// Builds the list of images for the carousel:
+  /// cover image (if any) + any gallery images cached from the current session.
+  List<String> get _carouselImages {
+    final images = <String>[];
+    if (widget.venue.imageUrl != null && widget.venue.imageUrl!.isNotEmpty) {
+      images.add(widget.venue.imageUrl!);
+    }
+    // Append gallery images from in-memory cache for this session.
+    final cached = uploadedImageCache.getAll();
+    for (final img in cached) {
+      final url = img.displayUrl;
+      if (url != null && url.isNotEmpty && !images.contains(url)) {
+        images.add(url);
+      }
+    }
+    return images;
   }
 
   Future<void> _openCreateCourt() async {
@@ -71,9 +94,10 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
     }
   }
 
-  Future<void> _showFullImage() async {
-    if (widget.venue.imageUrl == null) return;
-    
+  Future<void> _showFullImage({String? imageUrl}) async {
+    final url = imageUrl ?? widget.venue.imageUrl;
+    if (url == null || url.isEmpty) return;
+
     HapticFeedback.lightImpact();
     await showDialog(
       context: context,
@@ -84,18 +108,23 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
             InteractiveViewer(
               minScale: 0.5,
               maxScale: 4,
-              child: SafeNetworkImage(
-                url: widget.venue.imageUrl!,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.contain,
-              ),
+              child: url.startsWith('data:')
+                  ? Image.memory(
+                      Uri.parse(url).data!.contentAsBytes(),
+                      fit: BoxFit.contain,
+                    )
+                  : SafeNetworkImage(
+                      url: url,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
             ),
             Positioned(
               top: 16,
               right: 16,
               child: Container(
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.black54,
                   shape: BoxShape.circle,
                 ),
@@ -183,7 +212,7 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
-              // Collapsing App Bar with Hero Image
+              // ── Collapsing App Bar with Swipeable Image Carousel ───────
               SliverAppBar(
                 expandedHeight: 320,
                 pinned: true,
@@ -191,167 +220,13 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
                 elevation: 0,
                 backgroundColor: colorScheme.surface,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // Hero Image
-                      Hero(
-                        tag: 'venue_image_${widget.venue.id}',
-                        child: GestureDetector(
-                          onTap: _showFullImage,
-                          child: widget.venue.imageUrl != null
-                              ? SafeNetworkImage(
-                                  url: widget.venue.imageUrl!,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(
-                                  color: colorScheme.primaryContainer,
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.sports_soccer_rounded,
-                                      size: 80,
-                                      color: colorScheme.primary.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      ),
-                      // Gradient overlay for text readability
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          height: 160,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.7),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Venue name overlay
-                      Positioned(
-                        bottom: 20,
-                        left: 20,
-                        right: 20,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (!widget.venue.isVerified)
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.pending_outlined,
-                                      size: 14,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Pending Verification',
-                                      style: textTheme.labelSmall?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: AppFontWeights.semiBold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    widget.venue.name,
-                                    style: textTheme.headlineMedium?.copyWith(
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withValues(alpha: 0.3),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  size: 16,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    widget.venue.displayAddress,
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Expand image hint
-                      if (widget.venue.imageUrl != null)
-                        Positioned(
-                          top: MediaQuery.of(context).padding.top + 60,
-                          right: 20,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.fullscreen_rounded,
-                                  size: 16,
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Tap to expand',
-                                  style: textTheme.labelSmall?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
+                  background: _VenueCoverCarousel(
+                    imageUrls: _carouselImages,
+                    venue: widget.venue,
+                    pageController: _pageController,
+                    currentPage: _currentPage,
+                    onPageChanged: (page) => setState(() => _currentPage = page),
+                    onExpand: (url) => _showFullImage(imageUrl: url),
                   ),
                 ),
                 leading: Container(
@@ -787,6 +662,300 @@ class _StatusBadge extends StatelessWidget {
           color: color,
         ),
       ),
+    );
+  }
+}
+
+// ============================================================================
+// _VenueCoverCarousel
+// Swipeable image slider for the venue details hero area.
+// • Shows cover image first, then any gallery images from the in-memory cache.
+// • Animated dot indicators + prev/next arrows (hidden when only 1 image).
+// • Gradient overlay + venue name / verification badge.
+// • Tap-to-expand button opens current slide fullscreen.
+// ============================================================================
+
+class _VenueCoverCarousel extends StatelessWidget {
+  const _VenueCoverCarousel({
+    required this.imageUrls,
+    required this.venue,
+    required this.pageController,
+    required this.currentPage,
+    required this.onPageChanged,
+    required this.onExpand,
+  });
+
+  final List<String> imageUrls;
+  final Venue venue;
+  final PageController pageController;
+  final int currentPage;
+  final ValueChanged<int> onPageChanged;
+  final ValueChanged<String> onExpand;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final hasImages = imageUrls.isNotEmpty;
+    final multipleImages = imageUrls.length > 1;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ── Page view ──────────────────────────────────────────────────────
+        if (hasImages)
+          PageView.builder(
+            controller: pageController,
+            onPageChanged: onPageChanged,
+            itemCount: imageUrls.length,
+            itemBuilder: (context, index) {
+              final url = imageUrls[index];
+              return url.startsWith('data:')
+                  ? Image.memory(
+                      Uri.parse(url).data!.contentAsBytes(),
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
+                  : SafeNetworkImage(
+                      url: url,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                    );
+            },
+          )
+        else
+          // No images at all — show placeholder
+          Container(
+            color: colorScheme.primaryContainer,
+            child: Center(
+              child: Icon(
+                Icons.sports_soccer_rounded,
+                size: 80,
+                color: colorScheme.primary.withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+
+        // ── Gradient overlay ───────────────────────────────────────────────
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 180,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.75),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // ── Venue name + badge overlay ─────────────────────────────────────
+        Positioned(
+          bottom: multipleImages ? 40 : 20,
+          left: 20,
+          right: 20,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!venue.isVerified)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.pending_outlined,
+                        size: 14,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Pending Verification',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: AppFontWeights.semiBold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Text(
+                venue.name,
+                style: textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_outlined,
+                    size: 16,
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      venue.displayAddress,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // ── Dot indicators (multi-image only) ─────────────────────────────
+        if (multipleImages)
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(imageUrls.length, (index) {
+                final isActive = index == currentPage;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: isActive ? 20 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    color: isActive
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.45),
+                  ),
+                );
+              }),
+            ),
+          ),
+
+        // ── Left chevron (multi-image only) ───────────────────────────────
+        if (multipleImages && currentPage > 0)
+          Positioned(
+            left: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => pageController.previousPage(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.38),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.chevron_left_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // ── Right chevron (multi-image only) ──────────────────────────────
+        if (multipleImages && currentPage < imageUrls.length - 1)
+          Positioned(
+            right: 10,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => pageController.nextPage(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.38),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+        // ── Tap-to-expand button ──────────────────────────────────────────
+        if (hasImages)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                final url = imageUrls[currentPage.clamp(0, imageUrls.length - 1)];
+                onExpand(url);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.fullscreen_rounded,
+                      size: 16,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      multipleImages
+                          ? '${currentPage + 1} / ${imageUrls.length}'
+                          : 'Tap to expand',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

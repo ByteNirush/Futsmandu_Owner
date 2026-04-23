@@ -728,52 +728,129 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
     );
   }
 
+  Future<void> _addGalleryImageFromPicker() async {
+    final picked = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      await _pickGalleryImage(picked);
+    }
+  }
+
   Widget _galleryImagesSection(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSaved = _savedVenue != null;
+    final atMax = _galleryImages.length >= 10;
+    final canAdd = isSaved && !_isUploadingGalleryImage && !atMax;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sectionHeader(context, 'Gallery Images'),
-          Text(
-            'Add up to 10 images to showcase your venue (${_galleryImages.length}/10)',
-            style: Theme.of(context).textTheme.bodySmall,
+          // ── Header row: title + add button ─────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: _sectionHeader(context, 'Gallery Images')),
+              if (isSaved)
+                Tooltip(
+                  message: atMax
+                      ? 'Maximum 10 images reached'
+                      : _isUploadingGalleryImage
+                          ? 'Upload in progress…'
+                          : 'Add a photo',
+                  child: FilledButton.tonal(
+                    onPressed: canAdd ? _addGalleryImageFromPicker : null,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          atMax
+                              ? Icons.photo_library_outlined
+                              : Icons.add_photo_alternate_outlined,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(atMax ? 'Gallery full' : 'Add Photo'),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          OutlinedButton.icon(
-            onPressed: _savedVenue == null || _isUploadingGalleryImage
-                ? null
-                : () async {
-                    final picked = await _imagePicker.pickImage(
-                      source: ImageSource.gallery,
-                      imageQuality: 85,
-                    );
-                    if (picked != null) {
-                      await _pickGalleryImage(picked);
-                    }
-                  },
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: const Text('Add Gallery Image'),
-          ),
-          if (_galleryImageUploadStatusMessage != null) ...[
+
+          // ── Locked state (venue not yet saved) ──────────────────────
+          if (!isSaved) ...[
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              _galleryImageUploadStatusMessage!,
-              style: Theme.of(context).textTheme.bodySmall,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.md,
+              ),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.lock_outline_rounded,
+                    size: 32,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Save your venue first',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Gallery photos can be added after the venue is created.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ],
-          if (_galleryImages.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.md),
+
+          // ── Active gallery ─────────────────────────────────────────
+          if (isSaved) ...[
+            const SizedBox(height: AppSpacing.sm),
             VenueImageGalleryWidget(
               label: 'Uploaded Images',
               galleryImages: _galleryImages,
+              isUploading: _isUploadingGalleryImage,
+              uploadStatusMessage: _galleryImageUploadStatusMessage,
+              maxImages: 10,
+              onAddImage: canAdd ? _addGalleryImageFromPicker : null,
               onImageTap: (index, imageUrl) {
                 showDialog(
                   context: context,
                   builder: (_) => Dialog(
+                    backgroundColor: Colors.transparent,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
                       child: InteractiveViewer(
-                        child: Image.network(imageUrl),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(imageUrl, fit: BoxFit.contain),
+                        ),
                       ),
                     ),
                   ),
@@ -781,9 +858,6 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
               },
               onDeleteImage: (index) {
                 setState(() => _galleryImages.removeAt(index));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Gallery image removed')),
-                );
               },
             ),
           ],
@@ -891,8 +965,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
                 const SizedBox(height: AppSpacing.md),
                 _coverImageSection(context),
                 const SizedBox(height: AppSpacing.md),
-                if (_savedVenue != null) _galleryImagesSection(context),
-                if (_savedVenue != null) const SizedBox(height: AppSpacing.md),
+                _galleryImagesSection(context),
                 const SizedBox(height: AppSpacing.md),
 
                 // ── Submit button ─────────────────────────────────────────
