@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/futsmandu_design_system.dart' as ds;
 
 import '../../../../core/design_system/app_colors.dart';
 import '../../../../core/design_system/app_spacing.dart';
@@ -344,45 +345,43 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
   Widget _buildCourtSelector() {
     if (_courts.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(AppSpacing.xs),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.xs),
-            child: Text(
-              'Select Court',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.xs),
+          child: Text(
+            'Select Court',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: ds.AppFontWeights.semiBold,
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              spacing: AppSpacing.xs,
-              children: [
-                for (final court in _courts)
-                  ChoiceChip(
-                    label: Text(court.name),
-                    selected: _selectedCourtId == court.id,
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() => _selectedCourtId = court.id);
-                        _loadRules();
-                      }
-                    },
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            spacing: AppSpacing.xs,
+            children: [
+              for (final court in _courts)
+                ChoiceChip(
+                  label: Text(court.name),
+                  selected: _selectedCourtId == court.id,
+                  showCheckmark: false,
+                  onSelected: (selected) {
+                    if (selected) {
+                      setState(() => _selectedCourtId = court.id);
+                      _loadRules();
+                    }
+                  },
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: ds.AppRadius.small,
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -406,11 +405,13 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
 
     return Card(
       elevation: 0,
-      color: colorScheme.surfaceContainerLowest,
+      margin: EdgeInsets.zero,
+      color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: ds.AppRadius.large,
         side: BorderSide(
           color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: 1,
         ),
       ),
       child: Padding(
@@ -421,25 +422,17 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ruleColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                   child: Text(
                     rule.ruleType.toUpperCase(),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: ruleColor,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: ds.AppFontWeights.regular,
                     ),
                   ),
                 ),
                 const Spacer(),
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+                  icon: Icon(Icons.more_horiz, color: colorScheme.onSurfaceVariant),
                   onSelected: (value) {
                     if (value == 'edit') {
                       _openRuleForm(rule);
@@ -454,23 +447,25 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.xxs),
             Text(
               _formatPrice(rule.pricePaisa),
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: ds.AppFontWeights.semiBold,
                 color: colorScheme.onSurface,
+                
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.xxs),
             Row(
               children: [
-                Icon(Icons.schedule, size: 16, color: colorScheme.onSurfaceVariant),
-                const SizedBox(width: 4),
+                Icon(Icons.schedule_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                const SizedBox(width: AppSpacing.xxs),
                 Text(
                   '${_formatTime(rule.startTime)} - ${_formatTime(rule.endTime)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                    fontWeight: ds.AppFontWeights.regular,
                   ),
                 ),
               ],
@@ -478,12 +473,13 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
             const SizedBox(height: AppSpacing.xxs),
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 16, color: colorScheme.onSurfaceVariant),
-                const SizedBox(width: 4),
+                Icon(Icons.calendar_today_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                const SizedBox(width: AppSpacing.xxs),
                 Text(
                   _formatDays(rule.daysOfWeek),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                    fontWeight: ds.AppFontWeights.semiBold,
                   ),
                 ),
               ],
@@ -551,7 +547,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.sm),
       itemCount: _rules.length + 1,
-      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xxs),
       itemBuilder: (context, index) {
         if (index == 0) {
           return Column(
@@ -559,7 +555,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
             children: [
               _buildCourtSelector(),
               if (_isRefreshing) ...[
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xxs),
                 const LinearProgressIndicator(),
               ],
             ],
