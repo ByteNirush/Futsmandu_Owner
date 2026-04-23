@@ -7,6 +7,8 @@ import '../../../../core/design_system/app_radius.dart';
 import '../../../../shared/widgets/safe_network_image.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../courts/presentation/screens/create_court_screen.dart';
+import '../../../media/model/media_upload_models.dart';
+import '../../../media/service/owner_media_api.dart';
 import '../../../media/service/uploaded_image_cache.dart';
 import '../../domain/models/court_models.dart';
 import '../../domain/models/venue_models.dart';
@@ -24,14 +26,29 @@ class VenueDetailsScreen extends StatefulWidget {
 
 class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
   final VenueCourtsController _courtsController = VenueCourtsController();
+  final OwnerMediaApi _mediaApi = OwnerMediaApi();
   late final PageController _pageController;
   int _currentPage = 0;
+  List<VenueGalleryImage> _galleryImages = [];
 
   @override
   void initState() {
     super.initState();
     _courtsController.loadCourts(widget.venue.id);
     _pageController = PageController();
+    _loadGalleryImages();
+  }
+
+  Future<void> _loadGalleryImages() async {
+    try {
+      final images = await _mediaApi.fetchVenueGallery(widget.venue.id);
+      if (mounted) {
+        setState(() => _galleryImages = images);
+      }
+    } catch (e) {
+      // Silently fail - gallery images are not critical
+      debugPrint('Failed to load gallery images: $e');
+    }
   }
 
   @override
@@ -42,11 +59,18 @@ class _VenueDetailsScreenState extends State<VenueDetailsScreen> {
   }
 
   /// Builds the list of images for the carousel:
-  /// cover image (if any) + any gallery images cached from the current session.
+  /// cover image (if any) + gallery images from API + any cached from current session.
   List<String> get _carouselImages {
     final images = <String>[];
     if (widget.venue.imageUrl != null && widget.venue.imageUrl!.isNotEmpty) {
       images.add(widget.venue.imageUrl!);
+    }
+    // Add gallery images from API
+    for (final img in _galleryImages) {
+      final url = img.displayUrl;
+      if (url.isNotEmpty && !images.contains(url)) {
+        images.add(url);
+      }
     }
     // Append gallery images from in-memory cache for this session.
     final cached = uploadedImageCache.getAll();
