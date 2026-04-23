@@ -178,6 +178,25 @@ class OwnerMediaApi {
 
     throw Exception('Failed to fetch KYC documents after $maxRetries retries');
   }
+
+  // --------------------------------------------------------------------------
+  // Fetch venue gallery images
+  // GET /api/v1/owner/media/venues/{venueId}/gallery
+  // --------------------------------------------------------------------------
+
+  Future<List<VenueGalleryImage>> fetchVenueGallery(String venueId) async {
+    final response = await _apiClient.get(
+      OwnerApiConfig.mediaVenueGalleryEndpoint(venueId),
+    );
+
+    final data = response['data'] ?? response;
+    if (data is! List) return [];
+
+    return data
+        .map((item) => VenueGalleryImage.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
   // --------------------------------------------------------------------------
   // Private helpers
   // --------------------------------------------------------------------------
