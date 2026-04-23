@@ -385,3 +385,53 @@ class FetchKycDocumentsResponse {
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Venue Gallery Image
+// GET /api/v1/owner/media/venues/{venueId}/gallery response item
+// ---------------------------------------------------------------------------
+
+class VenueGalleryImage {
+  const VenueGalleryImage({
+    required this.assetId,
+    required this.cdnUrl,
+    this.key,
+    this.thumbUrl,
+    this.webpUrl,
+    this.uploadedAt,
+  });
+
+  final String assetId;
+  final String cdnUrl;
+  final String? key;
+  final String? thumbUrl;
+  final String? webpUrl;
+  final DateTime? uploadedAt;
+
+  /// Best available display URL: prefer WebP > CDN URL
+  String get displayUrl => webpUrl ?? cdnUrl;
+
+  factory VenueGalleryImage.fromJson(Map<String, dynamic> json) {
+    return VenueGalleryImage(
+      assetId: (json['asset_id'] as String?) ??
+          (json['assetId'] as String?) ??
+          '',
+      key: (json['key'] as String?),
+      cdnUrl: (json['cdn_url'] as String?) ??
+          (json['cdnUrl'] as String?) ??
+          '',
+      thumbUrl: (json['thumb_url'] as String?) ?? (json['thumbUrl'] as String?),
+      webpUrl: (json['webp_url'] as String?) ?? (json['webpUrl'] as String?),
+      uploadedAt: _parseDate(json['uploaded_at'] ?? json['uploadedAt']),
+    );
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+}
