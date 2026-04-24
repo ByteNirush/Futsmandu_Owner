@@ -1,10 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:futsmandu_design_system/futsmandu_design_system.dart';
 
-
 import '../controllers/owner_auth_controller.dart';
-
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({super.key, required this.authController});
@@ -71,9 +68,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(result.message)));
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/', (route) => false);
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       } on Exception catch (error) {
         if (!mounted) return;
         final message =
@@ -131,13 +126,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
     final primaryColor = colorScheme.primary;
-    
+
     // Fallback format if email exists
     final emailDisplay = _emailController.text.trim();
     final hasEmail = emailDisplay.isNotEmpty;
-    
+
     final destination = hasEmail ? emailDisplay : 'your email';
 
     return Scaffold(
@@ -147,7 +141,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         elevation: 0,
         scrolledUnderElevation: 0, // No horizontal dividing line when scrolled
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colorScheme.onSurface, size: 22),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: colorScheme.onSurface,
+            size: 22,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -157,9 +155,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           animation: widget.authController,
           builder: (context, _) {
             final isBusy = widget.authController.isBusy;
-            
+
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 16.0,
+              ),
               physics: const ClampingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -167,7 +168,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   // Branding: Logo at the top
                   const AppLogo(size: 56),
                   const SizedBox(height: 32),
-                  
+
                   // Typography: Heading
                   Text(
                     _isOwnerAuthFlow ? 'Verify your account' : 'Verify OTP',
@@ -179,14 +180,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Typography: Instruction Text
                   Text(
                     'Enter the 6-digit code sent to',
                     style: AppTypography.body(
                       context,
                       colorScheme,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.8,
+                      ),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -194,11 +197,20 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                   // Read-only confirmed data for email/phone
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.4,
+                      ),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
                     ),
                     child: Text(
                       destination,
@@ -211,7 +223,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
 
                   const SizedBox(height: 48),
-                  
+
                   // OTP Inputs Area
                   Form(
                     key: _formKey,
@@ -222,9 +234,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 56),
-                  
+
                   // Call to Action: Large, pill-shaped primary button
                   SizedBox(
                     width: double.infinity,
@@ -234,7 +246,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         backgroundColor: primaryColor,
                         foregroundColor: colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30), // Pill-shaped
+                          borderRadius: BorderRadius.circular(
+                            30,
+                          ), // Pill-shaped
                         ),
                         elevation: 0,
                       ),
@@ -250,23 +264,19 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             )
                           : Text(
                               'Verify',
-                              style: AppTypography.button(
-                                context,
-                                colorScheme,
-                              ),
+                              style: AppTypography.button(context, colorScheme),
                             ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Secondary Action: Clean text-only link
                   TextButton(
                     style: TextButton.styleFrom(
                       foregroundColor: colorScheme.onSurfaceVariant,
-                      textStyle: AppTypography.textTheme(colorScheme).bodySmall?.copyWith(
-                        fontWeight: AppFontWeights.semiBold,
-                      ),
+                      textStyle: AppTypography.textTheme(colorScheme).bodySmall
+                          ?.copyWith(fontWeight: AppFontWeights.semiBold),
                     ),
                     onPressed: isBusy ? null : _resend,
                     child: const Text('Resend Code'),
