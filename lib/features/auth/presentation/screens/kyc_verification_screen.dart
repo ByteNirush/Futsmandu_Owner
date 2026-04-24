@@ -96,12 +96,11 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         _documentStates[docType] = _DocumentState(
           docType: docType,
           status: hasUploadedDoc
-            ? (owner == null
-              ? KycDocumentUploadStatus.pending
-              : _getDocumentStatus(owner))
+              ? (owner == null
+                    ? KycDocumentUploadStatus.pending
+                    : _getDocumentStatus(owner))
               : KycDocumentUploadStatus.notStarted,
-          documentKey:
-              (docKey != null && docKey.isNotEmpty) ? docKey : null,
+          documentKey: (docKey != null && docKey.isNotEmpty) ? docKey : null,
           assetId: existingDoc?.assetId,
           imageUrl: existingDoc?.downloadUrl,
         );
@@ -186,8 +185,8 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         _owner = updatedOwner;
         final uploadStatus = uploaded.status;
         final nextStatus = uploadStatus.isFailed
-          ? KycDocumentUploadStatus.rejected
-          : KycDocumentUploadStatus.pending;
+            ? KycDocumentUploadStatus.rejected
+            : KycDocumentUploadStatus.pending;
 
         _documentStates[docType] = _DocumentState(
           docType: docType,
@@ -247,13 +246,13 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   Future<String> _refreshDocumentUrl(String docType) async {
     try {
       final response = await _mediaController.fetchAllKycDocuments();
-      
+
       // Find the document for this docType
       final doc = response.documents.firstWhere(
         (d) => d.docType == docType,
         orElse: () => throw Exception('Document not found'),
       );
-      
+
       if (doc.downloadUrl.isEmpty) {
         throw Exception('No download URL available');
       }
@@ -282,8 +281,9 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
   }
 
   String _getDocumentDescription(String docType) {
-    if (docType == 'business_registration')
+    if (docType == 'business_registration') {
       return 'Company registration certificate';
+    }
     if (docType == 'citizenship') return "Owner's citizenship card or passport";
     return 'Business PAN card';
   }
