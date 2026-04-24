@@ -78,29 +78,6 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
     }
   }
 
-  IconData _getAmenityIcon(String amenity) {
-    final lower = amenity.toLowerCase();
-    if (lower.contains('park')) {
-      return Icons.local_parking_rounded;
-    }
-    if (lower.contains('wifi') || lower.contains('internet')) {
-      return Icons.wifi_rounded;
-    }
-    if (lower.contains('food') || lower.contains('cafe')) {
-      return Icons.restaurant_rounded;
-    }
-    if (lower.contains('seating') || lower.contains('lounge')) {
-      return Icons.chair_rounded;
-    }
-    if (lower.contains('light') || lower.contains('flood')) {
-      return Icons.light_rounded;
-    }
-    if (lower.contains('shoe') || lower.contains('equipment')) {
-      return Icons.sports_rounded;
-    }
-    return Icons.check_circle_rounded;
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -415,12 +392,6 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(
-                                                _getAmenityIcon(amenity),
-                                                size: 14,
-                                                color: colorScheme.onSurfaceVariant,
-                                              ),
-                                              const SizedBox(width: AppSpacing.xxs),
                                               Text(
                                                 amenity,
                                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
