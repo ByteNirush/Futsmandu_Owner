@@ -3,6 +3,8 @@ import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:futsmandu_design_system/futsmandu_design_system.dart'
     show OwnerProfileHeader, ProfileSectionHeader, SettingsTile;
 
+import '../widgets/owner_avatar_uploader.dart';
+
 import '../../../../core/design_system/app_radius.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/theme/theme_provider.dart';
@@ -75,6 +77,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     kycActionLabel: owner.hasUploadedAnyKycDocument
                         ? 'Update KYC'
                         : 'Upload KYC',
+                    avatarWidget: OwnerAvatarUploader(
+                      radius: 28,
+                      name: owner.displayBusinessName,
+                    ),
                   ),
                 const SizedBox(height: AppSpacing.md),
                 ProfileSectionHeader(
