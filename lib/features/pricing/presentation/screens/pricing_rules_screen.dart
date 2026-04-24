@@ -349,7 +349,10 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: AppSpacing.xs, bottom: AppSpacing.xs),
+          padding: const EdgeInsets.only(
+            left: AppSpacing.xs,
+            bottom: AppSpacing.xs,
+          ),
           child: Text(
             'Select Court',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -421,18 +424,19 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
           children: [
             Row(
               children: [
-                Container(
-                  child: Text(
-                    rule.ruleType.toUpperCase(),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: ruleColor,
-                      fontWeight: ds.AppFontWeights.regular,
-                    ),
+                Text(
+                  rule.ruleType.toUpperCase(),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: ruleColor,
+                    fontWeight: ds.AppFontWeights.regular,
                   ),
                 ),
                 const Spacer(),
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_horiz, color: colorScheme.onSurfaceVariant),
+                  icon: Icon(
+                    Icons.more_horiz,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   onSelected: (value) {
                     if (value == 'edit') {
                       _openRuleForm(rule);
@@ -453,13 +457,16 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 fontWeight: ds.AppFontWeights.semiBold,
                 color: colorScheme.onSurface,
-                
               ),
             ),
             const SizedBox(height: AppSpacing.xxs),
             Row(
               children: [
-                Icon(Icons.schedule_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: AppSpacing.xxs),
                 Text(
                   '${_formatTime(rule.startTime)} - ${_formatTime(rule.endTime)}',
@@ -473,7 +480,11 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
             const SizedBox(height: AppSpacing.xxs),
             Row(
               children: [
-                Icon(Icons.calendar_today_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: AppSpacing.xxs),
                 Text(
                   _formatDays(rule.daysOfWeek),
@@ -521,7 +532,9 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
                 Icon(
                   Icons.rule_folder_outlined,
                   size: 64,
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 Text(

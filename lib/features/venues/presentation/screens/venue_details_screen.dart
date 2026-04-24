@@ -565,20 +565,6 @@ class _AmenityChip extends StatelessWidget {
 
   final String amenity;
 
-  IconData _getIcon(String amenity) {
-    final lower = amenity.toLowerCase();
-    if (lower.contains('park')) return Icons.local_parking_rounded;
-    if (lower.contains('wifi') || lower.contains('internet')) return Icons.wifi_rounded;
-    if (lower.contains('food') || lower.contains('cafe')) return Icons.restaurant_rounded;
-    if (lower.contains('seating') || lower.contains('lounge')) return Icons.chair_rounded;
-    if (lower.contains('light') || lower.contains('flood')) return Icons.light_rounded;
-    if (lower.contains('shoe') || lower.contains('equipment')) return Icons.sports_rounded;
-    if (lower.contains('water') || lower.contains('drink')) return Icons.water_drop_outlined;
-    if (lower.contains('restroom') || lower.contains('toilet')) return Icons.wc_outlined;
-    if (lower.contains('shower')) return Icons.shower_outlined;
-    return Icons.check_circle_rounded;
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -596,12 +582,6 @@ class _AmenityChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _getIcon(amenity),
-            size: 18,
-            color: colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
           Text(
             amenity,
             style: textTheme.bodyMedium?.copyWith(
