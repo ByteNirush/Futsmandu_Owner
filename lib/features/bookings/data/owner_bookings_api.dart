@@ -1,5 +1,16 @@
+import 'package:flutter/foundation.dart';
 import '../../../core/config/owner_api_config.dart';
 import '../../../core/network/owner_api_client.dart';
+
+enum BlockType {
+  maintenance('MAINTENANCE'),
+  privateReservation('PRIVATE_RESERVATION'),
+  event('EVENT'),
+  personal('PERSONAL');
+
+  final String value;
+  const BlockType(this.value);
+}
 
 class OwnerBookingsApi {
   OwnerBookingsApi({OwnerApiClient? apiClient})
@@ -30,7 +41,7 @@ class OwnerBookingsApi {
     required DateTime date,
   }) async {
     final response = await _apiClient.get(
-      OwnerApiConfig.bookingCalendarEndpoint(courtId),
+      OwnerApiConfig.courtCalendarEndpoint(courtId),
       queryParameters: {'date': _toDateOnly(date)},
     );
 
@@ -46,14 +57,35 @@ class OwnerBookingsApi {
     required String courtId,
     required DateTime date,
     required String startTime,
-    String? reason,
+    required BlockType blockType,
+    String? note,
   }) async {
+    // Validate startTime is in HH:MM format
+    final timeRegex = RegExp(r'^\d{2}:\d{2}$');
+    if (!timeRegex.hasMatch(startTime)) {
+      throw ArgumentError(
+        'startTime must be in HH:MM format (e.g., 08:00), got: $startTime',
+      );
+    }
+
+    // Validate startTime is not empty and has valid hour/minute values
+    final parts = startTime.split(':');
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || hour < 0 || hour > 23) {
+      throw ArgumentError('startTime hour must be between 00 and 23');
+    }
+    if (minute == null || minute < 0 || minute > 59) {
+      throw ArgumentError('startTime minute must be between 00 and 59');
+    }
+
     final response = await _apiClient.post(
       OwnerApiConfig.blockCourtSlotEndpoint(courtId),
       data: {
         'date': _toDateOnly(date),
         'startTime': startTime,
-        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+        'block_type': blockType.value,
+        if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
       },
     );
 
@@ -65,6 +97,7 @@ class OwnerBookingsApi {
   }) async {
     final response = await _apiClient.delete(
       OwnerApiConfig.unblockCourtSlotEndpoint(blockId),
+      data: <String, dynamic>{},
     );
     return UnblockCourtResult.fromJson(response);
   }
@@ -84,7 +117,7 @@ class OwnerBookingsApi {
         'court_id': courtId,
         'booking_date': _toDateOnly(bookingDate),
         'start_time': startTime,
-        'booking_type': bookingType,
+        'payment_method': 'CASH',
         'customer_name': customerName.trim(),
         'customer_phone': customerPhone.trim(),
         if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
@@ -160,7 +193,12 @@ class OwnerBookingsApi {
 
     return raw
         .whereType<Map<String, dynamic>>()
-        .map(CourtCalendarSlot.fromJson)
+        .map((json) {
+          if (json['status'] == 'BLOCKED') {
+            debugPrint('Blocked slot data: $json');
+          }
+          return CourtCalendarSlot.fromJson(json);
+        })
         .toList(growable: false);
   }
 }
@@ -185,6 +223,7 @@ class CourtCalendarSlot {
     this.price,
     this.displayPrice,
     this.bookingId,
+    this.blockId,
     this.playerName,
     this.bookingType,
   });
@@ -195,6 +234,7 @@ class CourtCalendarSlot {
   final num? price;
   final String? displayPrice;
   final String? bookingId;
+  final String? blockId;
   final String? playerName;
   final String? bookingType;
 
@@ -205,16 +245,19 @@ class CourtCalendarSlot {
         normalizedType == 'offline_reserved';
   }
 
+  String? get idForUnblock => blockId ?? bookingId;
+
   factory CourtCalendarSlot.fromJson(Map<String, dynamic> json) {
     return CourtCalendarSlot(
-      startTime: (json['start_time'] as String?) ?? '',
-      endTime: (json['end_time'] as String?) ?? '',
+      startTime: (json['startTime'] as String?) ?? '',
+      endTime: (json['endTime'] as String?) ?? '',
       status: (json['status'] as String?) ?? 'AVAILABLE',
       price: json['price'] as num?,
-      displayPrice: json['display_price'] as String?,
-      bookingId: json['booking_id'] as String?,
-      playerName: json['player_name'] as String?,
-      bookingType: json['booking_type'] as String?,
+      displayPrice: json['displayPrice'] as String?,
+      bookingId: json['bookingId'] as String?,
+      blockId: json['blockId'] as String?,
+      playerName: json['playerName'] as String?,
+      bookingType: json['bookingType'] as String?,
     );
   }
 }
@@ -235,6 +278,7 @@ class BookingListItem {
     this.playerName,
     this.courtName,
     this.venueName,
+    this.paymentMethod,
   });
 
   final String id;
@@ -251,6 +295,7 @@ class BookingListItem {
   final String? playerName;
   final String? courtName;
   final String? venueName;
+  final String? paymentMethod;
 
   factory BookingListItem.fromJson(Map<String, dynamic> json) {
     return BookingListItem(
@@ -264,7 +309,7 @@ class BookingListItem {
       createdAt: DateTime.tryParse((json['created_at'] as String?) ?? ''),
       offlineCustomerName: json['offline_customer_name'] as String?,
       offlineCustomerPhone: json['offline_customer_phone'] as String?,
-        playerId: json['player'] is Map<String, dynamic>
+      playerId: json['player'] is Map<String, dynamic>
           ? (json['player'] as Map<String, dynamic>)['id'] as String?
           : null,
       playerName: json['player'] is Map<String, dynamic>
@@ -276,6 +321,7 @@ class BookingListItem {
       venueName: json['venue'] is Map<String, dynamic>
           ? (json['venue'] as Map<String, dynamic>)['name'] as String?
           : null,
+      paymentMethod: json['payment_method'] as String?,
     );
   }
 
@@ -302,8 +348,8 @@ class CourtBlockResult {
   factory CourtBlockResult.fromJson(Map<String, dynamic> json) {
     return CourtBlockResult(
       id: (json['id'] as String?) ?? '',
-      startTime: (json['start_time'] as String?) ?? '',
-      endTime: (json['end_time'] as String?) ?? '',
+      startTime: (json['startTime'] as String?) ?? '',
+      endTime: (json['endTime'] as String?) ?? '',
       status: (json['status'] as String?) ?? '',
     );
   }
@@ -361,13 +407,13 @@ class OfflineBookingResult {
   factory OfflineBookingResult.fromJson(Map<String, dynamic> json) {
     return OfflineBookingResult(
       id: (json['id'] as String?) ?? '',
-      bookingType: (json['booking_type'] as String?) ?? '',
+      bookingType: (json['bookingType'] as String?) ?? '',
       status: (json['status'] as String?) ?? '',
-      startTime: (json['start_time'] as String?) ?? '',
-      endTime: (json['end_time'] as String?) ?? '',
-      bookingDate: DateTime.tryParse((json['booking_date'] as String?) ?? ''),
-      totalAmount: _asInt(json['total_amount']),
-      offlineCustomerName: json['offline_customer_name'] as String?,
+      startTime: (json['startTime'] as String?) ?? '',
+      endTime: (json['endTime'] as String?) ?? '',
+      bookingDate: DateTime.tryParse((json['bookingDate'] as String?) ?? ''),
+      totalAmount: _asInt(json['totalAmount']),
+      offlineCustomerName: json['offlineCustomerName'] as String?,
     );
   }
 

@@ -43,32 +43,6 @@ class TimeSlotItem extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Timeline Column
-            SizedBox(
-              width: 18,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    startTime,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: AppFontWeights.semiBold,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    endTime,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: AppFontWeights.semiBold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            
             // Timeline Div
             Column(
               children: [
@@ -231,11 +205,11 @@ class TimeSlotItem extends StatelessWidget {
   String _getSubtitle() {
     switch (status) {
       case SlotStatus.available:
-        return 'Tap to block or edit price';
+        return '$startTime - $endTime • Tap to book';
       case SlotStatus.booked:
         return '$startTime - $endTime';
       case SlotStatus.blocked:
-        return 'Unavailable for booking. Tap to reopen.';
+        return '$startTime - $endTime • Tap to reopen';
     }
   }
 

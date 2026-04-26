@@ -258,9 +258,21 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   _infoRow(
+                    icon: Icons.book_online_outlined,
+                    label: 'Booking Type',
+                    value: booking?.bookingType ?? '-',
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _infoRow(
                     icon: Icons.payments_outlined,
                     label: 'Amount',
                     value: _toAmount(booking?.totalAmount ?? 0),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _infoRow(
+                    icon: Icons.credit_card_outlined,
+                    label: 'Payment Type',
+                    value: booking?.paymentMethod ?? '-',
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   _infoRow(

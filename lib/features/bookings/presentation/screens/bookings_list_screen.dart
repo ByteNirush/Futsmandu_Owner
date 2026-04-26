@@ -335,10 +335,10 @@ class _BookingsListScreenState extends State<BookingsListScreen>
     );
   }
 
-  Future<String?> _promptBlockReason() async {
-    return showDialog<String>(
+  Future<_BlockSlotResult?> _promptBlockDetails() async {
+    return showDialog<_BlockSlotResult>(
       context: context,
-      builder: (_) => const _BlockSlotReasonDialog(),
+      builder: (_) => const _BlockSlotDialog(),
     );
   }
 
@@ -348,8 +348,8 @@ class _BookingsListScreenState extends State<BookingsListScreen>
       return;
     }
 
-    final reason = await _promptBlockReason();
-    if (!mounted || reason == null) {
+    final result = await _promptBlockDetails();
+    if (!mounted || result == null) {
       return;
     }
 
@@ -358,7 +358,8 @@ class _BookingsListScreenState extends State<BookingsListScreen>
         courtId: courtId,
         date: _selectedDay,
         startTime: slot.startTime,
-        reason: reason,
+        blockType: result.blockType,
+        note: result.note,
       );
       if (!mounted) {
         return;
@@ -376,21 +377,24 @@ class _BookingsListScreenState extends State<BookingsListScreen>
       if (!mounted) {
         return;
       }
+      debugPrint('Block slot API error: ${error.message}');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
+        SnackBar(content: Text('Error: ${error.message}')),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
       if (!mounted) {
         return;
       }
+      debugPrint('Block slot error: $error');
+      debugPrint('Stack trace: $stackTrace');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to block slot.')),
+        SnackBar(content: Text('Failed to block slot: $error')),
       );
     }
   }
 
   Future<void> _unblockSlot(CourtCalendarSlot slot) async {
-    final blockId = slot.bookingId;
+    final blockId = slot.idForUnblock;
     if (blockId == null || blockId.isEmpty) {
       if (!mounted) {
         return;
@@ -662,12 +666,13 @@ class _BookingsListScreenState extends State<BookingsListScreen>
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        spacing: AppSpacing.sm,
+        spacing: AppSpacing.xs,
         children: [
           for (final court in _courts)
             ChoiceChip(
               label: Text(court.name),
               selected: _selectedCourtId == court.id,
+              showCheckmark: false,
               onSelected: (selected) {
                 if (selected) {
                   setState(() => _selectedCourtId = court.id);
@@ -718,9 +723,9 @@ class _BookingsListScreenState extends State<BookingsListScreen>
                 ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.xs),
           _buildCourtFilterChips(),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
               Text(
@@ -840,83 +845,149 @@ class _BookingsListScreenState extends State<BookingsListScreen>
       'NO_SHOW',
     ];
 
-    return ScreenStateView(
-      state: listState,
-      emptyTitle: 'No bookings found',
-      emptySubtitle:
-          _listErrorMessage ?? 'Bookings matching the selected filters will appear here.',
-      onRetry: () => _loadBookingsList(page: _listPage),
-      content: ListView(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        children: [
-          AppCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    Widget buildFiltersSection() {
+      return AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Filters',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedDay,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
-                        );
-                        if (picked == null) return;
-                        setState(() {
-                          _selectedDay = picked;
-                          _focusedDay = picked;
-                        });
-                        await _loadBookingsList(page: 1);
-                        await _loadCalendar();
-                      },
-                      icon: const Icon(Icons.calendar_today_outlined, size: 18),
-                      label: Text(_formatDate(_selectedDay)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _buildCourtFilterChips(),
-                const SizedBox(height: AppSpacing.sm),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    spacing: AppSpacing.sm,
-                    children: [
-                      for (final status in statusOptions)
-                        ChoiceChip(
-                          label: Text(status == null
-                              ? 'All Statuses'
-                              : _formatListStatus(status)),
-                          selected: _selectedListStatus == status,
-                          onSelected: (selected) {
-                            if (!selected) return;
-                            setState(() => _selectedListStatus = status);
-                            _loadBookingsList(page: 1);
-                          },
-                        ),
-                    ],
+                Expanded(
+                  child: Text(
+                    'Filters',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDay,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2035),
+                    );
+                    if (picked == null) return;
+                    setState(() {
+                      _selectedDay = picked;
+                      _focusedDay = picked;
+                    });
+                    await _loadBookingsList(page: 1);
+                    await _loadCalendar();
+                  },
+                  icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                  label: Text(_formatDate(_selectedDay)),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+            _buildCourtFilterChips(),
+            const SizedBox(height: AppSpacing.xxs),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                spacing: AppSpacing.xxs,
+                children: [
+                  for (final status in statusOptions)
+                    ChoiceChip(
+                      label: Text(status == null
+                          ? 'All Statuses'
+                          : _formatListStatus(status)),
+                      selected: _selectedListStatus == status,
+                      showCheckmark: false,
+                      onSelected: (selected) {
+                        if (!selected) return;
+                        setState(() => _selectedListStatus = status);
+                        _loadBookingsList(page: 1);
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildBookingsContent() {
+      if (listState == ScreenUiState.loading) {
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      if (listState == ScreenUiState.error) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: AppCard(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 40,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Something went wrong',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(_listErrorMessage ?? 'Failed to load bookings list.'),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextButton.icon(
+                    onPressed: () => _loadBookingsList(page: _listPage),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Try Again'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+
+      if (listState == ScreenUiState.empty) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'No bookings found',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  _listErrorMessage ??
+                      'Bookings matching the selected filters will appear here.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+        );
+      }
+
+      // Content state
+      return Column(
+        children: [
           if (_isRefreshingList)
             const Padding(
-              padding: EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: EdgeInsets.only(bottom: AppSpacing.xs),
               child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
             ),
           for (final booking in _bookings)
             Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              padding: const EdgeInsets.only(bottom: AppSpacing.xs),
               child: AppCard(
                 child: InkWell(
                   onTap: () => _openBookingFromList(booking),
@@ -985,12 +1056,15 @@ class _BookingsListScreenState extends State<BookingsListScreen>
                   label: const Text('Previous'),
                 ),
               ),
-              const SizedBox(width: AppSpacing.xs),
+              const SizedBox(width: AppSpacing.xs2),
+              Text('$_listPage / $_listTotalPages'),
+              const SizedBox(width: AppSpacing.xs2),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _listPage < _listTotalPages
                       ? () => _loadBookingsList(page: _listPage + 1)
                       : null,
+                  iconAlignment: IconAlignment.end,
                   icon: const Icon(Icons.chevron_right),
                   label: const Text('Next'),
                 ),
@@ -1004,7 +1078,16 @@ class _BookingsListScreenState extends State<BookingsListScreen>
             style: Theme.of(context).textTheme.labelSmall,
           ),
         ],
-      ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      children: [
+        buildFiltersSection(),
+        const SizedBox(height: AppSpacing.xs),
+        buildBookingsContent(),
+      ],
     );
   }
 
@@ -1044,38 +1127,93 @@ class _CourtOption {
   final String name;
 }
 
-class _BlockSlotReasonDialog extends StatefulWidget {
-  const _BlockSlotReasonDialog();
+class _BlockSlotResult {
+  final BlockType blockType;
+  final String? note;
 
-  @override
-  State<_BlockSlotReasonDialog> createState() => _BlockSlotReasonDialogState();
+  const _BlockSlotResult({required this.blockType, this.note});
 }
 
-class _BlockSlotReasonDialogState extends State<_BlockSlotReasonDialog> {
-  late final TextEditingController _reasonController;
+class _BlockSlotDialog extends StatefulWidget {
+  const _BlockSlotDialog();
+
+  @override
+  State<_BlockSlotDialog> createState() => _BlockSlotDialogState();
+}
+
+class _BlockSlotDialogState extends State<_BlockSlotDialog> {
+  late final TextEditingController _noteController;
+  BlockType _selectedBlockType = BlockType.maintenance;
 
   @override
   void initState() {
     super.initState();
-    _reasonController = TextEditingController();
+    _noteController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _reasonController.dispose();
+    _noteController.dispose();
     super.dispose();
+  }
+
+  String _blockTypeLabel(BlockType type) {
+    return switch (type) {
+      BlockType.maintenance => 'Maintenance',
+      BlockType.privateReservation => 'Private Reservation',
+      BlockType.event => 'Event',
+      BlockType.personal => 'Personal',
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AlertDialog(
-      title: const Text('Block Slot'),
-      content: TextField(
-        controller: _reasonController,
-        maxLines: 3,
-        decoration: const InputDecoration(
-          labelText: 'Reason (optional)',
-          hintText: 'Maintenance, private reservation, etc.',
+      title: const Text('Block Time Slot'),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 300),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Reason',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            RadioGroup<BlockType>(
+              groupValue: _selectedBlockType,
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedBlockType = value);
+                }
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: BlockType.values.map((type) => RadioListTile<BlockType>(
+                  title: Text(_blockTypeLabel(type)),
+                  value: type,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                )).toList(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _noteController,
+              maxLines: 2,
+              decoration: InputDecoration(
+                labelText: 'Note (optional)',
+                hintText: 'Additional details...',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
       ),
       actions: [
@@ -1083,8 +1221,15 @@ class _BlockSlotReasonDialogState extends State<_BlockSlotReasonDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_reasonController.text.trim()),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(
+            _BlockSlotResult(
+              blockType: _selectedBlockType,
+              note: _noteController.text.trim().isEmpty
+                  ? null
+                  : _noteController.text.trim(),
+            ),
+          ),
           child: const Text('Block'),
         ),
       ],
