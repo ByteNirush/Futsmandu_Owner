@@ -66,7 +66,7 @@ class KycIntroScreen extends StatelessWidget {
                       const _KycHeroIllustration(),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        'Complete Your eKYC',
+                        'Complete Your KYC',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: AppFontWeights.bold,
@@ -98,7 +98,7 @@ class KycIntroScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Steps to complete eKYC',
+                              'Steps to complete KYC',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: AppFontWeights.semiBold,
                                 color: colorScheme.onSurface,
@@ -107,9 +107,8 @@ class KycIntroScreen extends StatelessWidget {
                             const SizedBox(height: AppSpacing.xs),
                             _StepText(
                               text:
-                                  'Upload a government-issued ID (Aadhaar, PAN, Passport, etc.)',
+                                  'Upload a Business Registration, Citizenship, and PAN',
                             ),
-                            _StepText(text: 'Upload a clear selfie'),
                           ],
                         ),
                       ),
