@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
@@ -224,7 +225,7 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
                         child: Text(
                           '${(_progress * 100).toInt()}%',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: AppFontWeights.bold,
                             color: cs.onSurfaceVariant,
                           ),
                         ),
@@ -274,7 +275,7 @@ class _OwnerAvatarUploaderState extends State<OwnerAvatarUploader>
           _initials ?? '?',
           style: TextStyle(
             fontSize: size * 0.3,
-            fontWeight: FontWeight.w700,
+            fontWeight: AppFontWeights.bold,
             color: accent,
           ),
         ),
@@ -314,7 +315,7 @@ class _SourceSheet extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
+                ?.copyWith(fontWeight: AppFontWeights.bold),
           ),
           const SizedBox(height: 16),
           _SourceTile(
@@ -365,7 +366,7 @@ class _SourceTile extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w500,
+                  fontWeight: AppFontWeights.medium,
                 ),
               ),
             ],

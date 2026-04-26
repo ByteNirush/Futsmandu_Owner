@@ -80,6 +80,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     avatarWidget: OwnerAvatarUploader(
                       radius: 28,
                       name: owner.displayBusinessName,
+                      initialImageUrl: owner.avatarUrl,
+                      initialAssetId: owner.avatarAssetId,
+                      onUploaded: (assetId, cdnUrl) {
+                        widget.authController.updateAvatar(assetId, cdnUrl);
+                      },
                     ),
                   ),
                 const SizedBox(height: AppSpacing.md),
