@@ -119,10 +119,18 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
     ),
   ];
 
+  void _navigateToTab(int tabIndex) {
+    setState(() {
+      _selectedIndex = tabIndex;
+      _visitedPages.add(tabIndex);
+    });
+  }
+
   late final List<Widget> _tabs = [
     DashboardScreen(
       quickActions: _dashboardQuickActions,
       authController: widget.authController,
+      onNavigateToTab: _navigateToTab,
     ),
     const BookingsListScreen(),
     const VenuesListScreen(),

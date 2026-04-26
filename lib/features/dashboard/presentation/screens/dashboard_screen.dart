@@ -32,10 +32,12 @@ class DashboardScreen extends StatefulWidget {
     super.key,
     this.quickActions = _defaultQuickActions,
     this.authController,
+    this.onNavigateToTab,
   });
 
   final List<DashboardQuickAction> quickActions;
   final OwnerAuthController? authController;
+  final void Function(int tabIndex)? onNavigateToTab;
 
   static const _defaultQuickActions = <DashboardQuickAction>[];
 
@@ -157,6 +159,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       title: 'Bookings',
                       value: overview.bookingsToday.toString(),
                       icon: Icons.calendar_today_rounded,
+                      onTap: () {
+                        widget.onNavigateToTab?.call(1);
+                      },
                     ),
                   ),
                   SizedBox(
@@ -165,6 +170,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       title: 'Pending',
                       value: overview.pendingBookings.toString(),
                       icon: Icons.hourglass_bottom_rounded,
+                      onTap: () {
+                        widget.onNavigateToTab?.call(1);
+                      },
                     ),
                   ),
                   SizedBox(
