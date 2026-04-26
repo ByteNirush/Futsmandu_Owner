@@ -4,6 +4,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:futsmandu_design_system/core/theme/app_colors.dart' as ds;
+import 'package:futsmandu_design_system/core/theme/app_radius.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import 'refreshable_kyc_image_display.dart';
 import 'uploaded_image_display.dart';
@@ -147,7 +149,7 @@ class _MediaUploadTileState extends State<MediaUploadTile>
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: borderColor, width: isDone ? 1.5 : 1),
         color: colorScheme.surface,
         boxShadow: [
@@ -160,7 +162,7 @@ class _MediaUploadTileState extends State<MediaUploadTile>
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -215,7 +217,7 @@ class _MediaUploadTileState extends State<MediaUploadTile>
                                     .textTheme
                                     .titleSmall
                                     ?.copyWith(
-                                      fontWeight: FontWeight.w600,
+                                      fontWeight: AppFontWeights.semiBold,
                                     ),
                               ),
                             ),
@@ -227,13 +229,12 @@ class _MediaUploadTileState extends State<MediaUploadTile>
                                 ),
                                 decoration: BoxDecoration(
                                   color: colorScheme.errorContainer,
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(AppRadius.xxs),
                                 ),
                                 child: Text(
                                   'Required',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
+                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    fontWeight: AppFontWeights.semiBold,
                                     color: colorScheme.onErrorContainer,
                                   ),
                                 ),
@@ -330,7 +331,7 @@ class _PreviewArea extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             // Image
-            _buildImage(),
+            _buildImage(context),
 
             // Upload overlay
             if (isUploading) _UploadProgressOverlay(progress: uploadProgress),
@@ -344,7 +345,7 @@ class _PreviewArea extends StatelessWidget {
               bottom: 8,
               right: 8,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                   child: Container(
@@ -353,16 +354,15 @@ class _PreviewArea extends StatelessWidget {
                     color: Colors.black38,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.open_in_full_rounded,
+                      children: [
+                        const Icon(Icons.open_in_full_rounded,
                             size: 12, color: Colors.white),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Text(
                           'Tap to expand',
-                          style: TextStyle(
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: AppFontWeights.medium,
                           ),
                         ),
                       ],
@@ -377,12 +377,12 @@ class _PreviewArea extends StatelessWidget {
     );
   }
 
-  Widget _buildImage() {
+  Widget _buildImage(BuildContext context) {
     if (localImagePath != null) {
       return Image.file(
         File(localImagePath!),
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _fallbackImage(),
+        errorBuilder: (ctx, _, _) => _fallbackImage(ctx),
       );
     }
     if (networkImageUrl != null && docType != null && onRefreshUrl != null) {
@@ -402,15 +402,16 @@ class _PreviewArea extends StatelessWidget {
       height: 180,
       width: double.infinity,
       fit: BoxFit.cover,
-      placeholder: _fallbackImage(),
+      placeholder: _fallbackImage(context),
     );
   }
 
-  Widget _fallbackImage() {
+  Widget _fallbackImage(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.grey[200],
-      child: const Center(
-        child: Icon(Icons.image_outlined, size: 40, color: Colors.grey),
+      color: cs.surfaceContainerHighest,
+      child: Center(
+        child: Icon(Icons.image_outlined, size: 40, color: cs.onSurfaceVariant),
       ),
     );
   }
@@ -467,10 +468,9 @@ class _EmptyPreviewArea extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Tap to select',
-                    style: TextStyle(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: accentColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: AppFontWeights.medium,
                     ),
                   ),
                 ],
@@ -513,10 +513,9 @@ class _UploadProgressOverlay extends StatelessWidget {
                 Center(
                   child: Text(
                     '${(progress * 100).toInt()}%',
-                    style: const TextStyle(
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: AppFontWeights.bold,
                     ),
                   ),
                 ),
@@ -524,12 +523,11 @@ class _UploadProgressOverlay extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Uploading…',
-          style: TextStyle(
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontWeight: AppFontWeights.medium,
           ),
         ),
       ],
@@ -706,10 +704,10 @@ class _ActionButton extends StatelessWidget {
       color: isDone
           ? accentColor.withValues(alpha: 0.1)
           : colorScheme.primaryContainer,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -725,12 +723,9 @@ class _ActionButton extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 isDone ? 'Change' : 'Upload',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isDone
-                      ? accentColor
-                      : colorScheme.onPrimaryContainer,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: AppFontWeights.semiBold,
+                  color: isDone ? accentColor : colorScheme.onPrimaryContainer,
                 ),
               ),
             ],
@@ -785,7 +780,7 @@ class _FullScreenImageViewer extends StatelessWidget {
               child: Row(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                       child: Container(
@@ -801,7 +796,7 @@ class _FullScreenImageViewer extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                         child: Container(
@@ -810,9 +805,9 @@ class _FullScreenImageViewer extends StatelessWidget {
                           color: Colors.black38,
                           child: Text(
                             label,
-                            style: const TextStyle(
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               color: Colors.white,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: AppFontWeights.semiBold,
                             ),
                           ),
                         ),
