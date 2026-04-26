@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
 
@@ -122,7 +123,7 @@ class _VenueImageGalleryWidgetState extends State<VenueImageGalleryWidget> {
                 Text(
                   'Remove this photo?',
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppFontWeights.bold,
                       ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
@@ -185,7 +186,7 @@ class _VenueImageGalleryWidgetState extends State<VenueImageGalleryWidget> {
             Text(
               widget.label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeights.semiBold,
                   ),
             ),
             const Spacer(),
@@ -208,7 +209,7 @@ class _VenueImageGalleryWidgetState extends State<VenueImageGalleryWidget> {
                         color: atMax
                             ? colorScheme.onErrorContainer
                             : colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: AppFontWeights.bold,
                       ),
                 ),
               ),
@@ -280,7 +281,7 @@ class _VenueImageGalleryWidgetState extends State<VenueImageGalleryWidget> {
                 Text(
                   'Add your first gallery photo',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeights.semiBold,
                         color: colorScheme.onSurface,
                       ),
                 ),
@@ -479,7 +480,7 @@ class _VenueImageGalleryWidgetState extends State<VenueImageGalleryWidget> {
                     message.isNotEmpty ? message : 'Uploading…',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: iconColor,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: AppFontWeights.medium,
                         ),
                   ),
                 ),

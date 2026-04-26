@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 // ============================================================================
 // RefreshableKycImageDisplay
@@ -277,7 +279,7 @@ class _RefreshableKycImageDisplayState
                         'URL Expiring Soon',
                         style: TextStyle(
                           color: cs.onTertiary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeights.semiBold,
                         ),
                       ),
                     ),
@@ -348,7 +350,7 @@ class _RefreshableKycImageDisplayState
               'View',
               style: TextStyle(
                 color: cs.onPrimary,
-                fontWeight: FontWeight.w500,
+                fontWeight: AppFontWeights.medium,
               ),
             ),
           ],

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
@@ -82,7 +83,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
         Text(
           widget.label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeights.semiBold,
               ),
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -164,7 +165,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
                 Text(
                   'Choose Image',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: AppFontWeights.semiBold,
                         color: colorScheme.onSurface,
                       ),
                 ),
@@ -268,7 +269,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
                   'Ready to upload',
                   style: TextStyle(
                     color: colorScheme.onTertiary,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeights.semiBold,
                   ),
                 ),
               ),
@@ -357,7 +358,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
                         'Uploaded',
                         style: TextStyle(
                             color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeights.semiBold,
                         ),
                       ),
                     ],
@@ -386,7 +387,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
                         'View',
                         style: TextStyle(
                           color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: AppFontWeights.medium,
                         ),
                       ),
                     ],
@@ -410,7 +411,7 @@ class _VenueImageUploadWidgetState extends State<VenueImageUploadWidget> {
             Text(
               'Uploading',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: AppFontWeights.semiBold,
                   ),
             ),
             Text(

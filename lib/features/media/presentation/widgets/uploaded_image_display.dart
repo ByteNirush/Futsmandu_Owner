@@ -98,13 +98,13 @@ class _UploadedImageDisplayState extends State<UploadedImageDisplay> {
     final displayUrl = cached?.displayUrl ?? widget.image;
 
     if (displayUrl == null || displayUrl.isEmpty) {
-      return _buildPlaceholder();
+      return _buildPlaceholder(context);
     }
 
-    return _buildImage(displayUrl);
+    return _buildImage(context, displayUrl);
   }
 
-  Widget _buildImage(String url) {
+  Widget _buildImage(BuildContext context, String url) {
     try {
       final isBase64 = url.startsWith('data:');
 
@@ -127,22 +127,23 @@ class _UploadedImageDisplayState extends State<UploadedImageDisplay> {
         ),
       );
     } catch (e) {
-      return _buildPlaceholder();
+      return _buildPlaceholder(context);
     }
   }
 
-  Widget _buildPlaceholder() {
+  Widget _buildPlaceholder(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return widget.placeholder ??
         ClipRRect(
           borderRadius: BorderRadius.circular(widget.borderRadius),
           child: Container(
             height: widget.height,
             width: widget.width,
-            color: Colors.grey[300],
+            color: cs.surfaceContainerHighest,
             child: Center(
               child: Icon(
                 Icons.image_not_supported_outlined,
-                color: Colors.grey[600],
+                color: cs.onSurfaceVariant,
                 size: 48,
               ),
             ),
@@ -158,7 +159,7 @@ class _UploadedImageDisplayState extends State<UploadedImageDisplay> {
     if (widget.errorBuilder != null) {
       return widget.errorBuilder!(context, error, stackTrace);
     }
-    return _buildPlaceholder();
+    return _buildPlaceholder(context);
   }
 
   static Uint8List _decodeBase64(String url) {
@@ -257,7 +258,7 @@ class _NetworkImageWithCleanClientState
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Container(
-        color: Colors.grey[300],
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: const Center(
           child: SizedBox(
             width: 24,
