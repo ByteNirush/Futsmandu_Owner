@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_radius.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -202,7 +203,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$title uploaded successfully'),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
@@ -221,7 +222,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
           content: Text(
             'Upload failed: ${_mediaController.errorMessage ?? 'Unknown error'}',
           ),
-          backgroundColor: Colors.red.shade700,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -416,7 +417,7 @@ class _KycVerificationScreenState extends State<KycVerificationScreen> {
         ),
         const SizedBox(height: AppSpacing.xs),
         ClipRRect(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
           child: LinearProgressIndicator(
             value: _completedCount / 3,
             minHeight: 6,

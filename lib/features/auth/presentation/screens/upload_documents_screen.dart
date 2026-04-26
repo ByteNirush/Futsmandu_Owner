@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:futsmandu_design_system/core/theme/app_radius.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../../../core/design_system/app_spacing.dart';
 
 import '../../../media/controller/media_upload_controller.dart';
 import '../../../media/model/media_upload_models.dart';
@@ -250,10 +254,12 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
               isError
                   ? Icons.error_outline_rounded
                   : Icons.check_circle_outline_rounded,
-              color: Colors.white,
+              color: isError
+                  ? Theme.of(context).colorScheme.onError
+                  : Theme.of(context).colorScheme.onPrimary,
               size: 18,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
             Expanded(child: Text(message)),
           ],
         ),
@@ -262,8 +268,8 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
             ? Theme.of(context).colorScheme.error
             : Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+        margin: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.sm),
       ),
     );
   }
@@ -308,18 +314,15 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
                     children: [
                       Text(
                         'KYC Verification',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: AppFontWeights.bold,
                           color: colorScheme.onSurface,
                         ),
                       ),
                       Text(
                         '$_uploadedCount of ${_docs.length} documents ready',
-                        style: TextStyle(
-                          fontSize: 11,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],
@@ -344,7 +347,7 @@ class _UploadDocumentsScreenState extends State<UploadDocumentsScreen>
                     Text(
                       'Required Documents',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: AppFontWeights.bold,
                           ),
                     ),
                     const SizedBox(height: 12),
@@ -439,12 +442,12 @@ class _HeaderBackground extends StatelessWidget {
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.sm, 0, AppSpacing.sm, AppSpacing.xxs),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeOut,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xxs),
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 3,
@@ -513,34 +516,34 @@ class _KycBanner extends StatelessWidget {
     required Color border,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpacing.xs2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: fg, size: 20),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: fg,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontWeight: AppFontWeights.bold,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   body,
-                  style:
-                      TextStyle(color: fg.withValues(alpha: 0.85), fontSize: 12),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: fg.withValues(alpha: 0.85),
+                  ),
                 ),
               ],
             ),
@@ -562,12 +565,13 @@ class _InfoRow extends StatelessWidget {
     return Row(
       children: [
         Icon(Icons.info_outline_rounded, color: cs.onSurfaceVariant, size: 16),
-        const SizedBox(width: 8),
+        const SizedBox(width: AppSpacing.xs),
         Expanded(
           child: Text(
             'Upload clear photos. JPG, PNG, WEBP accepted. Max 5 MB each.',
-            style: TextStyle(
-                color: cs.onSurfaceVariant, fontSize: 11.5),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ),
       ],
@@ -625,11 +629,12 @@ class _SubmitBar extends StatelessWidget {
           children: [
             if (uploadedCount < total)
               Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                 child: Text(
                   '$uploadedCount of $total docs uploaded. You can submit with partial documents.',
-                  style:
-                      TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -643,32 +648,31 @@ class _SubmitBar extends StatelessWidget {
                       canSubmit && !isSubmitting ? onSubmit : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: accent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: cs.onPrimary,
                     disabledBackgroundColor:
                         cs.outlineVariant.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                   child: isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            color: Colors.white,
+                            color: cs.onPrimary,
                           ),
                         )
                       : Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.send_rounded, size: 18),
-                            SizedBox(width: 8),
+                          children: [
+                            const Icon(Icons.send_rounded, size: 18),
+                            const SizedBox(width: AppSpacing.xs),
                             Text(
                               'Submit for Review',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                fontWeight: AppFontWeights.bold,
                               ),
                             ),
                           ],
