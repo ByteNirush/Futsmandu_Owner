@@ -217,20 +217,17 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
                     ),
               ),
               const Spacer(),
-              SegmentedButton<String>(
-                showSelectedIcon: false,
-                style: const ButtonStyle(
-                  visualDensity: VisualDensity.compact,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                segments: const [
-                  ButtonSegment(value: 'day', label: Text('Day')),
-                  ButtonSegment(value: 'week', label: Text('Week')),
-                  ButtonSegment(value: 'month', label: Text('Month')),
+              DropdownButton<String>(
+                value: _groupBy,
+                underline: const SizedBox.shrink(),
+                icon: const Icon(Icons.keyboard_arrow_down, size: 20),
+                items: const [
+                  DropdownMenuItem(value: 'day', child: Text('Day')),
+                  DropdownMenuItem(value: 'week', child: Text('Week')),
+                  DropdownMenuItem(value: 'month', child: Text('Month')),
                 ],
-                selected: {_groupBy},
-                onSelectionChanged: (value) {
-                  _updateGrouping(value.first);
+                onChanged: (value) {
+                  if (value != null) _updateGrouping(value);
                 },
               ),
             ],
