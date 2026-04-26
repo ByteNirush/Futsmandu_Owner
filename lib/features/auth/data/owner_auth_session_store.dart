@@ -14,6 +14,7 @@ class OwnerAuthSessionStore {
 
   static const String _ownerProfileKey = 'owner_auth_profile';
   static const String _ownerKycDocCacheKey = 'owner_kyc_docs_cache_v1';
+  static const String _ownerAvatarCacheKey = 'owner_avatar_cache_v1';
 
   final TokenManager _tokenManager;
   final SharedPreferences? _sharedPreferences;
@@ -142,6 +143,40 @@ class OwnerAuthSessionStore {
     await _writeKycDocCache(cache);
   }
 
+  // --- Avatar Persistence ---
+
+  Future<void> saveAvatarForOwner({
+    required String ownerId,
+    required String? assetId,
+    required String? url,
+  }) async {
+    final normalizedOwnerId = ownerId.trim();
+    if (normalizedOwnerId.isEmpty) return;
+
+    final cache = await _readAvatarCache();
+    cache[normalizedOwnerId] = {
+      'assetId': assetId,
+      'url': url,
+    };
+    await _writeAvatarCache(cache);
+  }
+
+  Future<Map<String, String?>?> getAvatarForOwner(String ownerId) async {
+    final normalizedOwnerId = ownerId.trim();
+    if (normalizedOwnerId.isEmpty) return null;
+
+    final cache = await _readAvatarCache();
+    final data = cache[normalizedOwnerId];
+    if (data is! Map<String, dynamic>) return null;
+
+    return {
+      'assetId': data['assetId']?.toString(),
+      'url': data['url']?.toString(),
+    };
+  }
+
+  // --- Internals ---
+
   Future<Map<String, dynamic>> _readKycDocCache() async {
     final prefs = await _prefs();
     final raw = prefs.getString(_ownerKycDocCacheKey);
@@ -163,6 +198,21 @@ class OwnerAuthSessionStore {
   Future<void> _writeKycDocCache(Map<String, dynamic> cache) async {
     final prefs = await _prefs();
     await prefs.setString(_ownerKycDocCacheKey, jsonEncode(cache));
+  }
+
+  Future<Map<String, dynamic>> _readAvatarCache() async {
+    final prefs = await _prefs();
+    final raw = prefs.getString(_ownerAvatarCacheKey);
+    if (raw == null || raw.isEmpty) return <String, dynamic>{};
+
+    final decoded = jsonDecode(raw);
+    if (decoded is Map<String, dynamic>) return Map<String, dynamic>.from(decoded);
+    return <String, dynamic>{};
+  }
+
+  Future<void> _writeAvatarCache(Map<String, dynamic> cache) async {
+    final prefs = await _prefs();
+    await prefs.setString(_ownerAvatarCacheKey, jsonEncode(cache));
   }
 
   Future<void> clearAll() async {

@@ -101,24 +101,53 @@ class OwnerAuthRepository {
 
   Future<Owner> _hydrateOwnerWithLocalKyc(Owner owner) async {
     final cachedDocKeys = await _sessionStore.getKycDocKeysForOwner(owner.id);
+    final cachedAvatar = await _sessionStore.getAvatarForOwner(owner.id);
 
+    var hydrated = owner;
+
+    // Hydrate KYC
     if (owner.kycDocumentKeys.isNotEmpty) {
       await _sessionStore.saveKycDocKeysForOwner(
         ownerId: owner.id,
         keys: owner.kycDocumentKeys,
       );
-      return owner;
+    } else if (cachedDocKeys.isNotEmpty && !owner.isKycApproved) {
+      hydrated = hydrated.copyWith(
+        isKycApproved: false,
+        kycStatus: KycVerificationStatus.pending,
+        kycRejectionReason: null,
+        kycDocumentKeys: cachedDocKeys,
+      );
     }
 
-    if (cachedDocKeys.isEmpty || owner.isKycApproved) {
-      return owner;
+    // Hydrate Avatar
+    if (owner.avatarAssetId != null && owner.avatarAssetId!.isNotEmpty) {
+      await _sessionStore.saveAvatarForOwner(
+        ownerId: owner.id,
+        assetId: owner.avatarAssetId,
+        url: owner.avatarUrl,
+      );
+    } else if (cachedAvatar != null) {
+      hydrated = hydrated.copyWith(
+        avatarAssetId: cachedAvatar['assetId'],
+        avatarUrl: cachedAvatar['url'],
+      );
     }
 
-    return owner.copyWith(
-      isKycApproved: false,
-      kycStatus: KycVerificationStatus.pending,
-      kycRejectionReason: null,
-      kycDocumentKeys: cachedDocKeys,
+    return hydrated;
+  }
+
+  Future<void> saveAvatarLocally({
+    required String ownerId,
+    required String assetId,
+    required String? url,
+  }) async {
+    await _sessionStore.saveAvatarForOwner(
+      ownerId: ownerId,
+      assetId: assetId,
+      url: url,
     );
   }
+
+  Future<void> saveOwnerLocally(Owner owner) => _sessionStore.saveOwner(owner);
 }

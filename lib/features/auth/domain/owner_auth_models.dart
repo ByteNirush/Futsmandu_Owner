@@ -15,6 +15,8 @@ class Owner {
     KycVerificationStatus? kycStatus,
     this.kycRejectionReason,
     this.kycDocumentKeys = const <String, String>{},
+    this.avatarUrl,
+    this.avatarAssetId,
   }) : isKycApproved =
            isKycApproved ?? kycStatus == KycVerificationStatus.approved,
        kycStatus =
@@ -36,6 +38,8 @@ class Owner {
   final KycVerificationStatus kycStatus;
   final String? kycRejectionReason;
   final Map<String, String> kycDocumentKeys;
+  final String? avatarUrl;
+  final String? avatarAssetId;
 
   static const List<String> _requiredKycDocTypes = <String>[
     'citizenship',
@@ -99,6 +103,8 @@ class Owner {
       kycStatus: status,
       kycRejectionReason: rejectionReason,
       kycDocumentKeys: docKeys,
+      avatarUrl: json['avatar_url']?.toString() ?? json['avatarUrl']?.toString(),
+      avatarAssetId: json['avatar_asset_id']?.toString() ?? json['avatarAssetId']?.toString(),
     );
   }
 
@@ -131,6 +137,8 @@ class Owner {
       kycStatus: status,
       kycRejectionReason: rejectionReason,
       kycDocumentKeys: docKeys,
+      avatarUrl: json['avatar_url']?.toString(),
+      avatarAssetId: json['avatar_asset_id']?.toString(),
     );
   }
 
@@ -150,6 +158,8 @@ class Owner {
       if (kycRejectionReason != null && kycRejectionReason!.trim().isNotEmpty)
         'kyc_rejection_reason': kycRejectionReason,
       'kyc_document_keys': kycDocumentKeys,
+      'avatar_url': avatarUrl,
+      'avatar_asset_id': avatarAssetId,
     };
   }
 
@@ -167,6 +177,8 @@ class Owner {
     KycVerificationStatus? kycStatus,
     String? kycRejectionReason,
     Map<String, String>? kycDocumentKeys,
+    String? avatarUrl,
+    String? avatarAssetId,
   }) {
     return Owner(
       id: id ?? this.id,
@@ -182,6 +194,8 @@ class Owner {
       kycStatus: kycStatus ?? this.kycStatus,
       kycRejectionReason: kycRejectionReason ?? this.kycRejectionReason,
       kycDocumentKeys: kycDocumentKeys ?? this.kycDocumentKeys,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      avatarAssetId: avatarAssetId ?? this.avatarAssetId,
     );
   }
 
