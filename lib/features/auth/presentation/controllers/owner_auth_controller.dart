@@ -169,6 +169,28 @@ class OwnerAuthController extends ChangeNotifier {
     }
   }
 
+  Future<void> updateAvatar(String assetId, String? cdnUrl) async {
+    if (_owner == null) return;
+
+    // 1. Update in-memory state
+    _owner = _owner!.copyWith(
+      avatarAssetId: assetId,
+      avatarUrl: cdnUrl,
+    );
+
+    // 2. Persist locally (since backend won't save it)
+    await _repository.saveAvatarLocally(
+      ownerId: _owner!.id,
+      assetId: assetId,
+      url: cdnUrl,
+    );
+    
+    // 3. Save the whole owner object to session store too
+    await _repository.saveOwnerLocally(_owner!);
+
+    notifyListeners();
+  }
+
   void clearError() {
     if (_errorMessage == null) return;
     _errorMessage = null;
