@@ -5,6 +5,7 @@ import '../../../../core/design_system/app_spacing.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../../auth/domain/owner_auth_models.dart';
 import '../../../auth/presentation/controllers/owner_auth_controller.dart';
+import '../../../notifications/presentation/screens/notifications_screen.dart';
 import '../../data/dashboard_controller.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/kyc_status_banner.dart';
@@ -86,7 +87,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const NotificationsScreen(),
+                ),
+              );
+            },
             tooltip: 'Notifications',
           ),
         ],
@@ -173,33 +180,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: AppSpacing.md),
 
               // ── Weekly Trend ──────────────────────────────────────────────
-              const WeeklyRevenueTrend(),
+              WeeklyRevenueTrend(
+                revenue: overview.weeklyRevenue,
+                isLoading: _controller.isLoading,
+              ),
               const SizedBox(height: AppSpacing.xs2),
 
               // ── Quick Actions ─────────────────────────────────────────────
               if (widget.quickActions.isNotEmpty) ...[
                 const _SectionHeader(title: 'Quick Actions'),
                 const SizedBox(height: AppSpacing.xs),
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (int i = 0; i < widget.quickActions.length; i++) ...[
-                        if (i > 0) const SizedBox(width: AppSpacing.xs),
-                        Expanded(
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: widget.quickActions
+                      .map(
+                        (action) => Expanded(
                           child: QuickActionButton(
-                            title: widget.quickActions[i].title,
-                            icon: widget.quickActions[i].icon,
+                            title: action.title,
+                            icon: action.icon,
                             onTap: () => Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: widget.quickActions[i].builder,
+                                builder: action.builder,
                               ),
                             ),
                           ),
                         ),
-                      ],
-                    ],
-                  ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: AppSpacing.xs2),
               ],

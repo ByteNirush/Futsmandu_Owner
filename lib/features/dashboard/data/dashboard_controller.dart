@@ -14,6 +14,7 @@ class DashboardOverview {
     required this.pendingBookings,
     required this.activeCourts,
     required this.upcomingBookings,
+    required this.weeklyRevenue,
   });
 
   /// Formatted revenue string, e.g. "NPR 28,500"
@@ -31,13 +32,30 @@ class DashboardOverview {
   /// Today's confirmed bookings for "Upcoming Bookings" list.
   final List<DashboardBookingItem> upcomingBookings;
 
+  /// Weekly revenue data for the trend chart (Mon-Sun).
+  final List<DailyRevenue> weeklyRevenue;
+
   static const empty = DashboardOverview(
     revenueToday: '—',
     bookingsToday: 0,
     pendingBookings: 0,
     activeCourts: 0,
     upcomingBookings: [],
+    weeklyRevenue: [],
   );
+}
+
+/// A single day's revenue data for the weekly trend chart.
+class DailyRevenue {
+  const DailyRevenue({
+    required this.day,
+    required this.amount,
+    required this.formattedAmount,
+  });
+
+  final String day; // e.g., 'Mon', 'Tue'
+  final double amount; // Numeric value for chart
+  final String formattedAmount; // e.g., 'NPR 5,000'
 }
 
 /// A single booking row for the "Upcoming Bookings" section.
@@ -131,12 +149,24 @@ class DashboardController extends ChangeNotifier {
           (summary.byStatus['PENDING_PAYMENT'] ?? 0) +
           (summary.byStatus['HELD'] ?? 0);
 
+      // Fetch weekly revenue data (last 7 days)
+      final weekAgo = today.subtract(const Duration(days: 6));
+      final weeklyRevenueData = await _analyticsApi.getRevenue(
+        from: weekAgo,
+        to: today,
+        groupBy: 'day',
+      );
+
+      // Build weekly revenue list ensuring all 7 days are present
+      final weeklyRevenue = _buildWeeklyRevenue(weeklyRevenueData.points, weekAgo);
+
       _overview = DashboardOverview(
         revenueToday: _formatRevenue(summary.totalRevenueNpr),
         bookingsToday: summary.confirmedBookings,
         pendingBookings: pendingCount,
         activeCourts: totalCourts,
         upcomingBookings: upcomingItems,
+        weeklyRevenue: weeklyRevenue,
       );
 
       _loadState = DashboardLoadState.loaded;
@@ -190,5 +220,47 @@ class DashboardController extends ChangeNotifier {
     if (status.isEmpty) return status;
     return status[0].toUpperCase() +
         status.substring(1).toLowerCase().replaceAll('_', ' ');
+  }
+
+  /// Builds a 7-day revenue list from API points, filling missing days with zero.
+  List<DailyRevenue> _buildWeeklyRevenue(
+    List<OwnerRevenuePoint> points,
+    DateTime weekStart,
+  ) {
+    final dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final result = <DailyRevenue>[];
+
+    for (int i = 0; i < 7; i++) {
+      final date = weekStart.add(Duration(days: i));
+      final dayLabel = dayLabels[date.weekday - 1];
+
+      // Find matching point by date
+      final point = points.firstWhere(
+        (p) {
+          try {
+            final pointDate = DateTime.parse(p.period);
+            return pointDate.year == date.year &&
+                pointDate.month == date.month &&
+                pointDate.day == date.day;
+          } catch (_) {
+            return false;
+          }
+        },
+        orElse: () => OwnerRevenuePoint(
+          period: '',
+          totalPaisa: 0,
+          totalNpr: '0.00',
+        ),
+      );
+
+      final amount = point.totalPaisa / 100; // Convert paisa to NPR
+      result.add(DailyRevenue(
+        day: dayLabel,
+        amount: amount,
+        formattedAmount: _formatRevenue(point.totalNpr),
+      ));
+    }
+
+    return result;
   }
 }
