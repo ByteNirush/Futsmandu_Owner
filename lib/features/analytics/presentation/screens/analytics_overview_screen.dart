@@ -218,6 +218,11 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
               ),
               const Spacer(),
               SegmentedButton<String>(
+                showSelectedIcon: false,
+                style: const ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 segments: const [
                   ButtonSegment(value: 'day', label: Text('Day')),
                   ButtonSegment(value: 'week', label: Text('Week')),
@@ -449,6 +454,11 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
                     children: [
                       Expanded(
                         child: SegmentedButton<String>(
+                          showSelectedIcon: false,
+                          style: const ButtonStyle(
+                            visualDensity: VisualDensity.compact,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
                           segments: const [
                             ButtonSegment(value: 'week', label: Text('Weekly')),
                             ButtonSegment(value: 'month', label: Text('Monthly')),
@@ -464,6 +474,11 @@ class _AnalyticsOverviewScreenState extends State<AnalyticsOverviewScreen> {
                       const SizedBox(width: AppSpacing.sm),
                       OutlinedButton.icon(
                         onPressed: _pickDateRange,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md,
+                          ),
+                        ),
                         icon: const Icon(Icons.date_range_outlined),
                         label: Text(
                           _rangePreset == 'custom' ? 'Custom*' : 'Custom',
