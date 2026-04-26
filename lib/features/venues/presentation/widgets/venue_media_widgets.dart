@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/design_system/app_spacing.dart';
@@ -204,7 +205,7 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                                       '${(_progress * 100).toInt()}%',
                                       style: TextStyle(
                                         color: cs.onPrimary,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: AppFontWeights.bold,
                                       ),
                                     ),
                                   ),
@@ -216,7 +217,7 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                             _status ?? 'Uploading…',
                             style: TextStyle(
                               color: cs.onPrimary,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: AppFontWeights.medium,
                             ),
                           ),
                         ],
@@ -319,7 +320,7 @@ class _VenueCoverImagePickerState extends State<VenueCoverImagePicker>
                                     : 'Tap to add cover image',
                                 style: TextStyle(
                                   color: cs.onPrimary,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: AppFontWeights.medium,
                                 ),
                               ),
                             ],
@@ -368,7 +369,7 @@ class _Placeholder extends StatelessWidget {
               'Add Cover Photo',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: accent,
-                fontWeight: FontWeight.w600,
+                fontWeight: AppFontWeights.semiBold,
               ),
             ),
             const SizedBox(height: 4),
@@ -549,7 +550,7 @@ class _VenueGalleryUploaderState extends State<VenueGalleryUploader> {
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700),
+                  ?.copyWith(fontWeight: AppFontWeights.bold),
             ),
             const SizedBox(width: 8),
             Container(
@@ -562,7 +563,7 @@ class _VenueGalleryUploaderState extends State<VenueGalleryUploader> {
               child: Text(
                 '${_images.length}/${widget.maxImages}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeights.semiBold,
                   color: cs.onPrimaryContainer,
                 ),
               ),
@@ -626,7 +627,7 @@ class _VenueGalleryUploaderState extends State<VenueGalleryUploader> {
                     Text(
                       'Add gallery photos',
                       style: TextStyle(
-                          color: accent, fontWeight: FontWeight.w600),
+                          color: accent, fontWeight: AppFontWeights.semiBold),
                     ),
                   ],
                 ),
@@ -696,7 +697,7 @@ class _GalleryCell extends StatelessWidget {
                         '${(image.progress * 100).toInt()}%',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: AppFontWeights.bold,
                         ),
                       ),
                     ],
@@ -815,7 +816,7 @@ class _AddImageCell extends StatelessWidget {
                 'Add',
                 style: TextStyle(
                   color: accent,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: AppFontWeights.semiBold,
                 ),
               ),
             ],
