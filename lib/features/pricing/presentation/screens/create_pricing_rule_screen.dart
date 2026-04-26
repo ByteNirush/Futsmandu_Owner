@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/design_system/app_spacing.dart';
 import '../../../../core/network/owner_api_client.dart';
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_loader.dart';
 import '../../../../shared/widgets/screen_state_view.dart';
 import '../../data/owner_pricing_api.dart';
@@ -293,168 +292,199 @@ class _CreatePricingRuleScreenState extends State<CreatePricingRuleScreen> {
         state: widget.state,
         emptyTitle: 'No pricing form',
         emptySubtitle: 'Configure custom pricing for the selected court.',
-        content: ListView(
-          padding: const EdgeInsets.all(AppSpacing.sm),
-          children: [
-            AppCard(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DropdownButtonFormField<String>(
-                      initialValue: _ruleType,
-                      decoration: const InputDecoration(labelText: 'Rule type'),
-                      items: _ruleTypes
-                          .map((type) => DropdownMenuItem(value: type, child: Text(type)))
-                          .toList(growable: false),
-                      onChanged: widget.rule == null
-                          ? (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _ruleType = value;
-                                  _syncPriorityForRuleType();
-                                });
-                              }
-                            }
-                          : null,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        if (widget.rule == null) ...[
-                          Expanded(
-                            child: TextFormField(
-                              controller: _priorityController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Priority'),
-                              validator: (value) {
-                                if (int.tryParse(value ?? '') == null) {
-                                  return 'Enter a valid priority';
-                                }
-                                return null;
-                              },
-                              enabled: _ruleType == 'custom',
-                            ),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                        ],
-                        Expanded(
-                          child: TextFormField(
-                            controller: _priceController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Price (NPR)'),
-                            validator: (value) {
-                              if (double.tryParse(value ?? '') == null) {
-                                return 'Enter a valid price';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    DropdownButtonFormField<String>(
-                      initialValue: _modifier,
-                      decoration: const InputDecoration(labelText: 'Modifier'),
-                      items: _modifiers
-                          .map((modifier) => DropdownMenuItem(value: modifier, child: Text(modifier)))
-                          .toList(growable: false),
-                      onChanged: (value) {
+        content: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.lg),
+            children: [
+              // Rule Type
+              DropdownButtonFormField<String>(
+                initialValue: _ruleType,
+                decoration: const InputDecoration(
+                  labelText: 'Rule type',
+                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+                ),
+                items: _ruleTypes
+                    .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                    .toList(growable: false),
+                onChanged: widget.rule == null
+                    ? (value) {
                         if (value != null) {
-                          setState(() => _modifier = value);
+                          setState(() {
+                            _ruleType = value;
+                            _syncPriorityForRuleType();
+                          });
                         }
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Wrap(
-                      spacing: AppSpacing.xs,
-                      runSpacing: AppSpacing.xs,
-                      children: _dayLabels.entries.map((entry) {
-                        final selected = _daysOfWeek.contains(entry.key);
-                        return FilterChip(
-                          label: Text(entry.value),
-                          selected: selected,
-                          onSelected: (value) {
-                            setState(() {
-                              if (value) {
-                                _daysOfWeek.add(entry.key);
-                              } else {
-                                _daysOfWeek.remove(entry.key);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(growable: false),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTimeSelector(
-                            label: 'Start time',
-                            time: _startTime,
-                            onTap: () => _pickTime(start: true),
-                          ),
+                      }
+                    : null,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Priority & Price Row
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.rule == null) ...[
+                    Expanded(
+                      child: TextFormField(
+                        controller: _priorityController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Priority',
+                          contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: _buildTimeSelector(
-                            label: 'End time',
-                            time: _endTime,
-                            onTap: () => _pickTime(start: false),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildDateSelector(
-                            label: 'Date from',
-                            value: _dateFrom,
-                            onTap: () => _pickDate(from: true),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: _buildDateSelector(
-                            label: 'Date to',
-                            value: _dateTo,
-                            onTap: () => _pickDate(from: false),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextFormField(
-                      controller: _hoursBeforeController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Hours before booking',
+                        validator: (value) {
+                          if (int.tryParse(value ?? '') == null) {
+                            return 'Enter a valid priority';
+                          }
+                          return null;
+                        },
+                        enabled: _ruleType == 'custom',
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.sm),
                   ],
-                ),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Price (NPR)',
+                        contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+                      ),
+                      validator: (value) {
+                        if (double.tryParse(value ?? '') == null) {
+                          return 'Enter a valid price';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
-            if (_errorMessage != null) ...[
               const SizedBox(height: AppSpacing.sm),
+
+              // Modifier
+              DropdownButtonFormField<String>(
+                initialValue: _modifier,
+                decoration: const InputDecoration(
+                  labelText: 'Modifier',
+                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+                ),
+                items: _modifiers
+                    .map((modifier) => DropdownMenuItem(value: modifier, child: Text(modifier)))
+                    .toList(growable: false),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _modifier = value);
+                  }
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Days of Week
               Text(
-                _errorMessage!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
+                'Days of Week',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
+              const SizedBox(height: AppSpacing.xxs),
+              Wrap(
+                spacing: AppSpacing.xxs,
+                runSpacing: AppSpacing.xxs,
+                children: _dayLabels.entries.map((entry) {
+                  final selected = _daysOfWeek.contains(entry.key);
+                  return FilterChip(
+                    label: Text(entry.value),
+                    selected: selected,
+                    onSelected: (value) {
+                      setState(() {
+                        if (value) {
+                          _daysOfWeek.add(entry.key);
+                        } else {
+                          _daysOfWeek.remove(entry.key);
+                        }
+                      });
+                    },
+                  );
+                }).toList(growable: false),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Time Range
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _buildTimeSelector(
+                      label: 'Start time',
+                      time: _startTime,
+                      onTap: () => _pickTime(start: true),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _buildTimeSelector(
+                      label: 'End time',
+                      time: _endTime,
+                      onTap: () => _pickTime(start: false),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Date Range
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _buildDateSelector(
+                      label: 'Date from',
+                      value: _dateFrom,
+                      onTap: () => _pickDate(from: true),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _buildDateSelector(
+                      label: 'Date to',
+                      value: _dateTo,
+                      onTap: () => _pickDate(from: false),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // Hours Before
+              TextFormField(
+                controller: _hoursBeforeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Hours before booking',
+                  contentPadding: EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+                ),
+              ),
+
+              if (_errorMessage != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  _errorMessage!,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+              ],
+
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: widget.rule == null ? 'Create Rule' : 'Update Rule',
+                onPressed: _saveRule,
+              ),
             ],
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              label: widget.rule == null ? 'Create Rule' : 'Update Rule',
-              onPressed: _saveRule,
-            ),
-          ],
+          ),
         ),
       ),
     );
