@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_radius.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/design_system/app_colors.dart';
@@ -150,7 +151,7 @@ class KycDocumentCard extends StatelessWidget {
     }
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Image.asset(assetPath, width: 32, height: 32, fit: BoxFit.cover),
     );
   }
@@ -169,7 +170,7 @@ class KycDocumentCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
           color: theme.colorScheme.outlineVariant,
         ),
@@ -187,7 +188,7 @@ class KycDocumentCard extends StatelessWidget {
                   height: 48,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: Center(child: _getDocIllustration()),
                 ),
@@ -203,17 +204,17 @@ class KycDocumentCard extends StatelessWidget {
                           color: theme.colorScheme.onSurface,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xxs),
                       Text(
                         description,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.xs),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
                         children: [
                           _StatusChip(
                             label: status == KycDocumentUploadStatus.notStarted
@@ -261,7 +262,7 @@ class KycDocumentCard extends StatelessWidget {
                 AppSpacing.sm,
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
                 child: LinearProgressIndicator(
                   value: uploadProgress,
                   minHeight: 6,
@@ -283,7 +284,7 @@ class KycDocumentCard extends StatelessWidget {
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,7 +316,7 @@ class KycDocumentCard extends StatelessWidget {
                 AppSpacing.md,
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: SizedBox(
                   height: 132,
                   width: double.infinity,
@@ -347,7 +348,7 @@ class KycDocumentCard extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(44),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                         ),
@@ -364,7 +365,7 @@ class KycDocumentCard extends StatelessWidget {
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(44),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                         ),
@@ -398,12 +399,12 @@ class KycDocumentCard extends StatelessWidget {
             return _buildNetworkImage();
           }
           return Container(
-            color: Colors.grey[300],
-            child: const Center(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: Center(
               child: Icon(
                 Icons.image_not_supported,
                 size: 24,
-                color: Colors.grey,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           );
@@ -460,23 +461,22 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: textColor),
-          const SizedBox(width: 6),
+          const SizedBox(width: AppSpacing.xxs),
           Text(
             label,
-            style: TextStyle(
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: textColor,
               fontWeight: AppFontWeights.semiBold,
-              fontSize: 12,
             ),
           ),
         ],
