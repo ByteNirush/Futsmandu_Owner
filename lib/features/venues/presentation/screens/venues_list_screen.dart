@@ -83,7 +83,12 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Venues')),
+      backgroundColor: colorScheme.surfaceContainerLowest,
+      appBar: AppBar(
+        title: const Text('My Venues'),
+        backgroundColor: colorScheme.surfaceContainerLowest,
+        elevation: 0,
+      ),
       floatingActionButton: AppExtendedActionButton(
         heroTag: 'venues_add_fab',
         onPressed: _openCreateVenue,
@@ -102,320 +107,350 @@ class _VenuesListScreenState extends State<VenuesListScreen> {
           onRefresh: _controller.refresh,
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenPadding,
+              AppSpacing.sm,
+              AppSpacing.screenPadding,
+              AppSpacing.xl,
+            ),
             itemCount: _controller.venues.length,
-            separatorBuilder: (_, index) =>
-                const SizedBox(height: AppSpacing.sm),
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
             itemBuilder: (context, index) {
               final venue = _controller.venues[index];
-              return Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  boxShadow: AppShadows.card(colorScheme),
-                ),
-                child: Material(
-                  color: colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  surfaceTintColor: Colors.transparent,
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () async {
-                      final changed = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          builder: (_) => VenueDetailsScreen(venue: venue),
-                        ),
-                      );
-                      if (changed == true && mounted) {
-                        await _controller.reloadAfterMutation();
-                      }
-                    },
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Premium Image banner
-                        Stack(
-                          children: [
-                            Container(
-                              height: 160,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    colorScheme.primaryContainer.withValues(alpha: 0.6),
-                                    colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                                  ],
-                                ),
-                              ),
-                              child: venue.imageUrl != null
-                                  ? SafeNetworkImage(
-                                      url: venue.imageUrl!,
-                                      width: double.infinity,
-                                      height: 160,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Center(
-                                      child: Icon(
-                                        Icons.sports_soccer_rounded,
-                                        color: colorScheme.primary.withValues(alpha: 0.3),
-                                        size: 64,
-                                      ),
-                                    ),
-                            ),
-                            // Subtle overlay gradient at the top right to make the edit button pop
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topRight,
-                                    end: Alignment.bottomLeft,
-                                    colors: [
-                                      Colors.black.withValues(alpha: 0.2),
-                                      Colors.transparent,
-                                    ],
-                                    stops: const [0.0, 0.4],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: AppSpacing.sm,
-                              right: AppSpacing.sm,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surface,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.15),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  shape: const CircleBorder(),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: IconButton(
-                                    onPressed: () => _openEditVenue(venue),
-                                    icon: const Icon(Icons.edit_rounded),
-                                    color: colorScheme.onSurface,
-                                    splashColor: colorScheme.primary.withValues(alpha: 0.1),
-                                    highlightColor: colorScheme.primary.withValues(alpha: 0.05),
-                                    splashRadius: 24,
-                                    padding: const EdgeInsets.all(AppSpacing.xs),
-                                    constraints: const BoxConstraints(),
-                                    iconSize: 20,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        
-                        // Content area
-                        Padding(
-                          padding: const EdgeInsets.all(AppSpacing.cardPadding),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                venue.name,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      fontWeight: AppFontWeights.bold,
-                                      letterSpacing: -0.5,
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: AppSpacing.xxs),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on_rounded,
-                                    size: 16,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(width: AppSpacing.xxs),
-                                  Expanded(
-                                    child: Text(
-                                      venue.displayAddress,
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                            height: 1.2,
-                                          ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              
-                              const SizedBox(height: AppSpacing.md),
-                              
-                              // Badges section wrapped for better responsiveness
-                              Wrap(
-                                spacing: AppSpacing.xs,
-                                runSpacing: AppSpacing.xs,
-                                children: [
-                                  // Verification status
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.sm,
-                                      vertical: AppSpacing.xs,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: venue.isVerified
-                                          ? AppColors.success.withValues(alpha: 0.12)
-                                          : AppColors.warning.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          venue.isVerified
-                                              ? Icons.verified_rounded
-                                              : Icons.info_rounded,
-                                          size: 16,
-                                          color: venue.isVerified
-                                              ? AppColors.success
-                                              : AppColors.warning,
-                                        ),
-                                        const SizedBox(width: AppSpacing.xxs),
-                                        Text(
-                                          venue.isVerified
-                                              ? 'Verified'
-                                              : 'Pending Verification',
-                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                color: venue.isVerified
-                                                    ? AppColors.success
-                                                    : AppColors.warning,
-                                                letterSpacing: 0,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  
-                                  // Active status
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.sm,
-                                      vertical: AppSpacing.xs,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: venue.isActive
-                                          ? colorScheme.secondary.withValues(alpha: 0.12)
-                                          : colorScheme.outline.withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          venue.isActive
-                                              ? Icons.check_circle_rounded
-                                              : Icons.cancel_rounded,
-                                          size: 16,
-                                          color: venue.isActive
-                                              ? colorScheme.secondary
-                                              : colorScheme.outline,
-                                        ),
-                                        const SizedBox(width: AppSpacing.xxs),
-                                        Text(
-                                          venue.isActive ? 'Active' : 'Inactive',
-                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                color: venue.isActive
-                                                    ? colorScheme.secondary
-                                                    : colorScheme.outline,
-                                                letterSpacing: 0,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  
-                                  // Courts count
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpacing.sm,
-                                      vertical: AppSpacing.xs,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.tertiary.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.sports_soccer_rounded,
-                                          size: 16,
-                                          color: colorScheme.tertiary,
-                                        ),
-                                        const SizedBox(width: AppSpacing.xxs),
-                                        Text(
-                                          '${venue.courtsCount} court${venue.courtsCount == 1 ? '' : 's'}',
-                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                color: colorScheme.tertiary,
-                                                letterSpacing: 0,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              
-                              // Amenities section
-                              if (venue.amenities.isNotEmpty) ...[
-                                const SizedBox(height: AppSpacing.md),
-                                Wrap(
-                                  spacing: AppSpacing.xs,
-                                  runSpacing: AppSpacing.xs,
-                                  children: venue.amenities
-                                      .take(4)
-                                      .map(
-                                        (amenity) => Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.sm,
-                                            vertical: AppSpacing.xs,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                                            borderRadius: BorderRadius.circular(20), // Pill shape for amenities
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                amenity,
-                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                                      color: colorScheme.onSurfaceVariant,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                      .toList(growable: false),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
+              return _VenueCard(
+                venue: venue,
+                onTap: () async {
+                  final changed = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => VenueDetailsScreen(venue: venue),
                     ),
-                  ),
-                ),
+                  );
+                  if (changed == true && mounted) {
+                    await _controller.reloadAfterMutation();
+                  }
+                },
+                onEdit: () => _openEditVenue(venue),
               );
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Venue Card (Clean, Modern Design - Matching Player App)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _VenueCard extends StatelessWidget {
+  const _VenueCard({
+    required this.venue,
+    required this.onTap,
+    required this.onEdit,
+  });
+
+  final Venue venue;
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 0.5,
+        ),
+        boxShadow: AppShadows.card(colorScheme),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _VenueCardImage(
+                imageUrl: venue.imageUrl ?? '',
+                isVerified: venue.isVerified,
+                onEdit: onEdit,
+              ),
+              _VenueCardBody(
+                venue: venue,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Image Section ───────────────────────────────────────────────────────────
+
+class _VenueCardImage extends StatelessWidget {
+  const _VenueCardImage({
+    required this.imageUrl,
+    required this.isVerified,
+    required this.onEdit,
+  });
+
+  final String imageUrl;
+  final bool isVerified;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return SizedBox(
+      height: 172,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Cover photo
+          imageUrl.isNotEmpty
+              ? SafeNetworkImage(
+                  url: imageUrl,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                )
+              : ColoredBox(
+                  color: colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: Icon(
+                      Icons.sports_soccer_rounded,
+                      size: 48,
+                      color: colorScheme.outlineVariant,
+                    ),
+                  ),
+                ),
+
+          // Top gradient for badge contrast
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.center,
+                colors: [
+                  colorScheme.scrim.withValues(alpha: 0.25),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+
+          // Edit button — top right
+          Positioned(
+            top: AppSpacing.sm,
+            right: AppSpacing.sm,
+            child: _BadgePill(
+              color: colorScheme.surface.withValues(alpha: 0.9),
+              onTap: onEdit,
+              child: Icon(
+                Icons.edit_rounded,
+                size: 16,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ),
+
+          // Verified pill — top left
+          if (isVerified)
+            Positioned(
+              top: AppSpacing.sm,
+              left: AppSpacing.sm,
+              child: _BadgePill(
+                color: AppColors.success,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.verified_rounded,
+                      size: 12,
+                      color: colorScheme.onPrimary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Verified',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onPrimary,
+                        fontWeight: AppFontWeights.semiBold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgePill extends StatelessWidget {
+  const _BadgePill({
+    required this.color,
+    required this.child,
+    this.onTap,
+  });
+
+  final Color color;
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xs,
+          vertical: 5,
+        ),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+// ── Body Section ─────────────────────────────────────────────────────────────
+
+class _VenueCardBody extends StatelessWidget {
+  const _VenueCardBody({required this.venue});
+
+  final Venue venue;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Name
+          Text(
+            venue.name,
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: AppFontWeights.bold,
+              letterSpacing: -0.2,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          const SizedBox(height: AppSpacing.xxs + 1),
+
+          // Address
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: 13,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AppSpacing.xxs),
+              Expanded(
+                child: Text(
+                  venue.displayAddress,
+                  style: textTheme.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+
+          // Status badges row
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.xxs + 2,
+            runSpacing: AppSpacing.xxs + 2,
+            children: [
+              // Active status chip
+              _StatusChip(
+                label: venue.isActive ? 'Active' : 'Inactive',
+                isActive: venue.isActive,
+              ),
+              // Courts count
+              Text(
+                '${venue.courtsCount} court${venue.courtsCount == 1 ? '' : 's'}',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: AppFontWeights.semiBold,
+                ),
+              ),
+            ],
+          ),
+
+          // Amenities
+          if (venue.amenities.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              spacing: AppSpacing.xxs + 2,
+              runSpacing: AppSpacing.xxs + 2,
+              children: venue.amenities.take(3).map((amenity) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                    vertical: AppSpacing.xxs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(AppRadius.sm - 2),
+                  ),
+                  child: Text(
+                    amenity,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({
+    required this.label,
+    required this.isActive,
+  });
+
+  final String label;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    final color = isActive ? AppColors.success : colorScheme.outline;
+
+    return Text(
+      label,
+      style: textTheme.labelSmall?.copyWith(
+        color: color,
+        fontWeight: AppFontWeights.semiBold,
       ),
     );
   }
