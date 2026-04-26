@@ -406,92 +406,104 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
 
     final ruleColor = getRuleTypeColor();
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: ds.AppRadius.large,
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          width: 1,
-        ),
-      ),
+    return InkWell(
+      onTap: () => _openRuleForm(rule),
+      borderRadius: ds.AppRadius.small,
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xs,
+        ),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Text(
-                  rule.ruleType.toUpperCase(),
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: ruleColor,
-                    fontWeight: ds.AppFontWeights.regular,
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        rule.ruleType.toUpperCase(),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelSmall?.copyWith(
+                          color: ruleColor,
+                          fontWeight: ds.AppFontWeights.semiBold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        _formatPrice(rule.pricePaisa),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(
+                          fontWeight: ds.AppFontWeights.semiBold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const Spacer(),
-                PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_horiz,
-                    color: colorScheme.onSurfaceVariant,
+                  const SizedBox(height: AppSpacing.xxs),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.schedule_rounded,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: AppSpacing.xxs),
+                      Text(
+                        '${_formatTime(rule.startTime)} - ${_formatTime(rule.endTime)}',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: AppSpacing.xxs),
+                      Expanded(
+                        child: Text(
+                          _formatDays(rule.daysOfWeek),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      _openRuleForm(rule);
-                    } else if (value == 'delete') {
-                      _deleteRule(rule);
-                    }
-                  },
-                  itemBuilder: (context) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xxs),
-            Text(
-              _formatPrice(rule.pricePaisa),
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: ds.AppFontWeights.semiBold,
-                color: colorScheme.onSurface,
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.xxs),
             Row(
               children: [
-                Icon(
-                  Icons.schedule_rounded,
-                  size: 18,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: AppSpacing.xxs),
-                Text(
-                  '${_formatTime(rule.startTime)} - ${_formatTime(rule.endTime)}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                IconButton(
+                  icon: Icon(
+                    Icons.edit_outlined,
+                    size: 20,
                     color: colorScheme.onSurfaceVariant,
-                    fontWeight: ds.AppFontWeights.regular,
                   ),
+                  onPressed: () => _openRuleForm(rule),
+                  visualDensity: VisualDensity.compact,
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xxs),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_rounded,
-                  size: 18,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: AppSpacing.xxs),
-                Text(
-                  _formatDays(rule.daysOfWeek),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: ds.AppFontWeights.semiBold,
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: colorScheme.error,
                   ),
+                  onPressed: () => _deleteRule(rule),
+                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
@@ -560,7 +572,7 @@ class _PricingRulesScreenState extends State<PricingRulesScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(AppSpacing.sm),
       itemCount: _rules.length + 1,
-      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xxs),
+      separatorBuilder: (_, _) => const SizedBox.shrink(),
       itemBuilder: (context, index) {
         if (index == 0) {
           return Column(
