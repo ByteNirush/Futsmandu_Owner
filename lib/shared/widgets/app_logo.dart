@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/design_system/app_spacing.dart';
-
 class AppLogo extends StatelessWidget {
   const AppLogo({
     super.key,
@@ -15,9 +13,8 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final borderRadius = size * 0.25;
-    final isDarkMode = theme.brightness == Brightness.dark;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final logoPath = isDarkMode ? _darkModeLogoPath : _lightModeLogoPath;
 
     return Column(
@@ -37,14 +34,6 @@ class AppLogo extends StatelessWidget {
               height: size,
               fit: BoxFit.contain,
             ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          'Futsmandu',
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: theme.colorScheme.primary,
-            letterSpacing: 1.0,
           ),
         ),
       ],

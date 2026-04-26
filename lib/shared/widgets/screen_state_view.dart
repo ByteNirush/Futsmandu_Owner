@@ -129,16 +129,6 @@ class _BasicEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 34,
-              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
-              child: Icon(
-                Icons.sports_soccer_rounded,
-                size: 34,
-                color: colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium,
