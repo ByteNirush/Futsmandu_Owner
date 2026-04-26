@@ -812,7 +812,7 @@ class _CreateVenueScreenState extends State<CreateVenueScreen> {
                   Text(
                     'Save your venue first',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: AppFontWeights.semiBold,
                           color: colorScheme.onSurface,
                         ),
                   ),
