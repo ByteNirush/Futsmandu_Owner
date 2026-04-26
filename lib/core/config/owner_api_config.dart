@@ -111,7 +111,7 @@ class OwnerApiConfig {
       '$mediaEndpoint/kyc/upload-url';
 
   static const String mediaAvatarUploadUrlEndpoint =
-      '$mediaEndpoint/profile/avatar/upload-url';
+      '$mediaEndpoint/profile/upload-url';
 
   static String venueCoverUploadUrlEndpoint(String venueId) =>
       '$mediaEndpoint/venues/$venueId/cover/upload-url';
