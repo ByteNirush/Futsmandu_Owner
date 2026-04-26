@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:futsmandu_design_system/core/theme/app_radius.dart';
+import 'package:futsmandu_design_system/core/theme/app_spacing.dart';
 import 'package:futsmandu_design_system/core/theme/app_typography.dart';
 
 import '../../../../core/theme/theme_provider.dart';
@@ -175,28 +177,28 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
         ),
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
-            height: 64,
+            height: AppSpacing.xxl + 32,
             indicatorColor: Colors.transparent,
             indicatorShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppRadius.large,
             ),
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             iconTheme: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return IconThemeData(
                   color: Theme.of(context).colorScheme.primary,
-                  size: 24,
+                  size: AppSpacing.md,
                 );
               }
               return IconThemeData(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
-                size: 24,
+                size: AppSpacing.md,
               );
             }),
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final baseStyle = Theme.of(context).textTheme.labelSmall
                   ?.copyWith(
-                    fontSize: 11,
+                    fontSize: 11 * AppTypographyScale.fromContext(context),
                     fontWeight: AppFontWeights.regular,
                     height: 1.2,
                   );
@@ -225,28 +227,28 @@ class _OwnerShellScreenState extends State<OwnerShellScreen> {
             },
             destinations: const [
               NavigationDestination(
-                icon: Icon(CupertinoIcons.square_grid_2x2, size: 24),
-                selectedIcon: Icon(CupertinoIcons.square_grid_2x2_fill, size: 24),
+                icon: Icon(CupertinoIcons.square_grid_2x2, size: AppSpacing.md),
+                selectedIcon: Icon(CupertinoIcons.square_grid_2x2_fill, size: AppSpacing.md),
                 label: 'Dashboard',
               ),
               NavigationDestination(
-                icon: Icon(CupertinoIcons.calendar, size: 24),
-                selectedIcon: Icon(CupertinoIcons.calendar, size: 24),
+                icon: Icon(CupertinoIcons.calendar, size: AppSpacing.md),
+                selectedIcon: Icon(CupertinoIcons.calendar, size: AppSpacing.md),
                 label: 'Bookings',
               ),
               NavigationDestination(
-                icon: Icon(CupertinoIcons.building_2_fill, size: 24),
-                selectedIcon: Icon(CupertinoIcons.building_2_fill, size: 24),
+                icon: Icon(CupertinoIcons.building_2_fill, size: AppSpacing.md),
+                selectedIcon: Icon(CupertinoIcons.building_2_fill, size: AppSpacing.md),
                 label: 'Venues',
               ),
               NavigationDestination(
-                icon: Icon(CupertinoIcons.tag, size: 24),
-                selectedIcon: Icon(CupertinoIcons.tag_fill, size: 24),
+                icon: Icon(CupertinoIcons.tag, size: AppSpacing.md),
+                selectedIcon: Icon(CupertinoIcons.tag_fill, size: AppSpacing.md),
                 label: 'Pricing',
               ),
               NavigationDestination(
-                icon: Icon(CupertinoIcons.bars, size: 24),
-                selectedIcon: Icon(CupertinoIcons.bars, size: 24),
+                icon: Icon(CupertinoIcons.bars, size: AppSpacing.md),
+                selectedIcon: Icon(CupertinoIcons.bars, size: AppSpacing.md),
                 label: 'More',
               ),
             ],
